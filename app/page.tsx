@@ -117,6 +117,7 @@ const isWineProduct=(product:PublicProduct)=>{
 export default function Home() {
   const [activeSlide,setActiveSlide] = useState(0);
   const [menuOpen,setMenuOpen] = useState(false);
+  const [mobileDropdown,setMobileDropdown] = useState('');
   const [wines,setWines] = useState<PublicProduct[]>([]);
   const [catalogLoading,setCatalogLoading] = useState(true);
   const [catalogError,setCatalogError] = useState('');
@@ -130,10 +131,29 @@ export default function Home() {
   const [catalogVarietal,setCatalogVarietal] = useState('');
   const [headerCompact,setHeaderCompact] = useState(false);
   const [headerSearchOpen,setHeaderSearchOpen] = useState(false);
+  const [catalogPdfUrl,setCatalogPdfUrl] = useState('/catalogo.pdf');
 
   useEffect(() => {
     const supabase=createClient();
     let cancelled=false;
+
+    const loadCatalogPdf=async()=>{
+      const {data,error}=await supabase
+        .from('site_settings')
+        .select('key,value')
+        .in('key',['generated_catalog_pdf','catalog_pdf']);
+
+      if(error){
+        console.error('No se pudo cargar la URL del catálogo:',error);
+        return;
+      }
+
+      const generated=(data||[]).find((row:any)=>row.key==='generated_catalog_pdf')?.value?.url;
+      const manual=(data||[]).find((row:any)=>row.key==='catalog_pdf')?.value?.url;
+      if(!cancelled) setCatalogPdfUrl(generated||manual||'/catalogo.pdf');
+    };
+
+    void loadCatalogPdf();
 
     const loadCatalog=async()=>{
       setCatalogLoading(true);
@@ -318,20 +338,20 @@ export default function Home() {
       </Link>
       <nav className={menuOpen?'main-nav is-open':'main-nav'} aria-label="Navegación principal">
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger">Vinos <ChevronDown size={13}/></button>
-          <div className="nav-dropdown-panel grouped-menu-panel">{Object.entries(wineGroups).map(([label])=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>setMenuOpen(false)}>{label}</Link>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>Vinos <ChevronDown size={13}/></button>
+          <div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='vinos'?' is-mobile-open':''}`}>{Object.entries(wineGroups).map(([label])=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>{label}</Link>)}</div>
         </div>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger">Espumantes <ChevronDown size={13}/></button>
-          <div className="nav-dropdown-panel grouped-menu-panel">{Object.entries(sparklingGroups).map(([label,terms])=><button key={label} onClick={()=>openGroup(label,terms,'Espumantes')}>{label}</button>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='espumantes'?'':'espumantes')}>Espumantes <ChevronDown size={13}/></button>
+          <div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='espumantes'?' is-mobile-open':''}`}>{Object.entries(sparklingGroups).map(([label,terms])=><button key={label} onClick={()=>{openGroup(label,terms,'Espumantes');setMenuOpen(false);setMobileDropdown('')}}>{label}</button>)}</div>
         </div>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger">Bodegas <ChevronDown size={13}/></button>
-          <div className="nav-dropdown-panel winery-panel">{wineryNames.map(w=><button key={w} onClick={()=>openWinery(w)}>{w}</button>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='bodegas'?'':'bodegas')}>Bodegas <ChevronDown size={13}/></button>
+          <div className={`nav-dropdown-panel winery-panel${mobileDropdown==='bodegas'?' is-mobile-open':''}`}>{wineryNames.map(w=><button key={w} onClick={()=>{openWinery(w);setMenuOpen(false);setMobileDropdown('')}}>{w}</button>)}</div>
         </div>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger">Categorías <ChevronDown size={13}/></button>
-          <div className="nav-dropdown-panel category-menu-panel">{Object.entries(categoryGroups).map(([label,terms])=><button key={label} onClick={()=>openGroup(label,terms,'Categoría')}>{label}</button>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='categorias'?'':'categorias')}>Categorías <ChevronDown size={13}/></button>
+          <div className={`nav-dropdown-panel category-menu-panel${mobileDropdown==='categorias'?' is-mobile-open':''}`}>{Object.entries(categoryGroups).map(([label,terms])=><button key={label} onClick={()=>{openGroup(label,terms,'Categoría');setMenuOpen(false);setMobileDropdown('')}}>{label}</button>)}</div>
         </div>
         <a href="#colecciones" onClick={()=>setMenuOpen(false)}>Colecciones</a><a href="#nosotros" onClick={()=>setMenuOpen(false)}>Sobre nosotros</a>
       </nav>
@@ -340,15 +360,16 @@ export default function Home() {
         <Link className="icon-action desktop-action" href="/admin" aria-label="Mi cuenta"><UserRound size={19}/></Link>
         <button className="icon-action cart-trigger" aria-label="Pedido" onClick={()=>setCartOpen(true)}><ShoppingBag size={19}/>{cartBoxes>0&&<span>{cartBoxes}</span>}</button>
         <a className="catalog-button" href="#catalogo">Catálogo</a>
-        <button className="mobile-menu-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?<X/>:<Menu/>}</button>
+        <button className="mobile-menu-button" aria-label="Abrir menú" onClick={()=>{setMenuOpen(v=>!v);if(menuOpen)setMobileDropdown('')}}>{menuOpen?<X/>:<Menu/>}</button>
       </div>
+      {menuOpen&&<button className="mobile-nav-backdrop" aria-label="Cerrar menú" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}/>}
       <div className={`header-search-panel${headerSearchOpen?' is-open':''}`}>
         <Search size={18}/>
         <input
           autoFocus={headerSearchOpen}
           value={catalogQuery}
           onChange={event=>setCatalogQuery(event.target.value)}
-          onKeyDown={event=>{if(event.key==='Enter'){document.getElementById('vinos')?.scrollIntoView({behavior:'smooth'});setHeaderSearchOpen(false);}}}
+          onKeyDown={event=>{if(event.key==='Enter'){document.getElementById('nuestros-vinos')?.scrollIntoView({behavior:'smooth'});setHeaderSearchOpen(false);}}}
           placeholder="Buscar vino, bodega o varietal"
         />
         {catalogQuery&&<button type="button" onClick={()=>setCatalogQuery('')} aria-label="Limpiar búsqueda"><X size={16}/></button>}
@@ -365,10 +386,10 @@ export default function Home() {
     <section id="vinos" className="featured-wines-section"><div className="featured-section-title"><span/><h2>Vinos destacados</h2><span/></div>{catalogLoading?<p className="catalog-state">Cargando catálogo...</p>:<div className="featured-wines-grid">{featuredWines.map(w=><ProductCard key={w.id} wine={w}/>)}</div>}{catalogError&&<p className="catalog-warning">Se mostró un catálogo de respaldo porque Supabase respondió: {catalogError}</p>}</section>
 
     <section id="catalogo" className="premium-banner">
-      <div className="premium-banner-shade"/><div className="premium-banner-copy"><span>Selección Dolce Vino</span><h2>Vinos de alta gama para momentos únicos</h2><p>Etiquetas seleccionadas de bodegas destacadas, reunidas en un catálogo pensado para descubrir, elegir y compartir.</p><a href="/catalogo.pdf" download>Descargar catálogo</a></div>
+      <div className="premium-banner-shade"/><div className="premium-banner-copy"><span>Selección Dolce Vino</span><h2>Vinos de alta gama para momentos únicos</h2><p>Etiquetas seleccionadas de bodegas destacadas, reunidas en un catálogo pensado para descubrir, elegir y compartir.</p><a href={catalogPdfUrl} target="_blank" rel="noreferrer" download>Descargar catálogo actual</a></div>
     </section>
 
-    <section className="catalog-grid-section"><div className="featured-section-title"><span/><h2>Nuestros vinos</h2><span/></div><div className="catalog-inline-filters"><label><Search size={17}/><input value={catalogQuery} onChange={event=>setCatalogQuery(event.target.value)} placeholder="Buscar vino o bodega"/></label><select value={catalogVarietal} onChange={event=>setCatalogVarietal(event.target.value)}><option value="">Todos los varietales</option>{catalogVarietals.map(varietal=><option key={varietal} value={varietal}>{varietal}</option>)}</select>{(catalogQuery||catalogVarietal)&&<button type="button" onClick={()=>{setCatalogQuery('');setCatalogVarietal('')}}>Limpiar filtros</button>}</div>{catalogLoading?<p className="catalog-state">Cargando productos desde Supabase...</p>:visibleCatalog.length?<><p className="catalog-results-count">{filteredWineCatalog.length} vinos encontrados</p><div className="catalog-products-grid">{visibleCatalog.map(w=><ProductCard key={w.id} wine={w} compact/>)}</div>{hasMoreWines&&<button className="show-more-button" onClick={showNextWines}>Ver más vinos</button>}</>:<p className="catalog-state">No encontramos vinos con esos filtros.</p>}</section>
+    <section id="nuestros-vinos" className="catalog-grid-section"><div className="featured-section-title"><span/><h2>Nuestros vinos</h2><span/></div><div className="catalog-inline-filters"><label><Search size={17}/><input value={catalogQuery} onChange={event=>setCatalogQuery(event.target.value)} placeholder="Buscar vino o bodega"/></label><select value={catalogVarietal} onChange={event=>setCatalogVarietal(event.target.value)}><option value="">Todos los varietales</option>{catalogVarietals.map(varietal=><option key={varietal} value={varietal}>{varietal}</option>)}</select>{(catalogQuery||catalogVarietal)&&<button type="button" onClick={()=>{setCatalogQuery('');setCatalogVarietal('')}}>Limpiar filtros</button>}</div>{catalogLoading?<p className="catalog-state">Cargando productos desde Supabase...</p>:visibleCatalog.length?<><p className="catalog-results-count">{filteredWineCatalog.length} vinos encontrados</p><div className="catalog-products-grid">{visibleCatalog.map(w=><ProductCard key={w.id} wine={w} compact/>)}</div>{hasMoreWines&&<button className="show-more-button" onClick={showNextWines}>Ver más vinos</button>}</>:<p className="catalog-state">No encontramos vinos con esos filtros.</p>}</section>
 
     <section className="post-catalog-cta" aria-label="Categorías y servicios Dolce Vino">
       <div className="post-catalog-cta-shell">
@@ -441,9 +462,17 @@ export default function Home() {
           <p className="product-detail-description">{selectedProduct.description||'Una etiqueta seleccionada por Dolce Vino para disfrutar y compartir en ocasiones especiales.'}</p>
           <div className="product-detail-meta">
             <strong>{formatPrice(selectedProduct.pricePerUnit)}</strong>
-            <span>{isEstucheProduct(selectedProduct.name,selectedProduct.detail)?'Precio total del estuche':`Caja x${selectedProduct.unitsPerBox}`}</span>
+            <span>{isEstucheProduct(selectedProduct.name,selectedProduct.detail)?'Precio total del estuche':'Compra mínima: caja cerrada'}</span>
           </div>
-          <button type="button" className="product-detail-add" onClick={()=>addBox(selectedProduct)}>
+          <button
+            type="button"
+            className="product-detail-add"
+            onClick={()=>{
+              const product=selectedProduct;
+              setSelectedProduct(null);
+              addBox(product);
+            }}
+          >
             {isEstucheProduct(selectedProduct.name,selectedProduct.detail)?'Agregar estuche':'Agregar caja'}
           </button>
         </div>

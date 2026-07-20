@@ -2869,3 +2869,145 @@ img{max-width:100%}
   }
   .cart-footer{padding:12px 14px!important}
 }
+
+
+/* ===== Ajustes finales solicitados ===== */
+
+/* Sin cambio de color o contorno al pasar sobre el nombre */
+.product-title-button,
+.product-title-button:hover,
+.product-title-button:focus{
+  outline:0!important;
+  box-shadow:none!important;
+}
+.product-title-button:hover h3,
+.product-title-button:focus h3{
+  color:inherit!important;
+  text-decoration:none!important;
+}
+
+/* Modal de producto 30% más compacto */
+.product-detail-modal{
+  width:min(720px,92vw)!important;
+  max-height:78vh!important;
+}
+.product-detail-image{
+  min-height:360px!important;
+  padding:26px!important;
+}
+.product-detail-image img{
+  max-height:330px!important;
+}
+.product-detail-copy{
+  padding:42px 34px 34px!important;
+}
+.product-detail-copy h2{
+  font-size:clamp(24px,2.6vw,36px)!important;
+}
+.product-detail-description{
+  font-size:13px!important;
+  line-height:1.6!important;
+}
+.product-detail-meta{
+  margin-top:24px!important;
+  padding-top:18px!important;
+}
+.product-detail-add{
+  height:44px!important;
+}
+
+/* Wallpaper más visible */
+.home-page::before,
+.wine-listing-page::before{
+  background:
+    linear-gradient(rgba(5,6,5,.66),rgba(5,6,5,.66)),
+    url('/assets/fondo_vinedo.jpg') center center / cover no-repeat!important;
+}
+.prestige-strip,
+.featured-wines-section,
+.catalog-grid-section,
+.wine-listing-content{
+  background:rgba(7,8,7,.72)!important;
+  backdrop-filter:blur(.5px)!important;
+}
+
+/* Capa para cerrar menú mobile */
+.mobile-nav-backdrop{
+  display:none;
+}
+
+@media(max-width:1000px){
+  .main-nav{
+    visibility:hidden!important;
+    pointer-events:none!important;
+    transform:translateX(105%)!important;
+  }
+  .main-nav.is-open{
+    visibility:visible!important;
+    pointer-events:auto!important;
+    transform:translateX(0)!important;
+  }
+
+  .mobile-nav-backdrop{
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:998;
+    border:0;
+    background:rgba(0,0,0,.58);
+    backdrop-filter:blur(2px);
+  }
+
+  .nav-dropdown-panel{
+    max-height:0!important;
+    padding:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+  .nav-dropdown-panel.is-mobile-open{
+    max-height:420px!important;
+    padding:8px!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+
+  /* No abrir por focus en mobile */
+  .nav-dropdown:focus-within .nav-dropdown-panel:not(.is-mobile-open){
+    max-height:0!important;
+    padding:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+}
+
+@media(max-width:700px){
+  .product-detail-modal{
+    width:min(92vw,560px)!important;
+    max-height:82vh!important;
+  }
+  .product-detail-image{
+    min-height:250px!important;
+    padding:20px!important;
+  }
+  .product-detail-image img{
+    max-height:230px!important;
+  }
+  .product-detail-copy{
+    padding:24px 18px 20px!important;
+  }
+
+  .home-page::before,
+  .wine-listing-page::before{
+    background:
+      linear-gradient(rgba(5,6,5,.7),rgba(5,6,5,.7)),
+      url('/assets/fondo_vinedo.jpg') 45% center / cover no-repeat!important;
+  }
+}
+
+
+/* Texto aclaratorio del detalle de producto */
+.product-detail-meta span{
+  max-width:230px;
+  text-align:right;
+  line-height:1.45;
+}

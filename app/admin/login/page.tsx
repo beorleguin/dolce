@@ -36,8 +36,9 @@ export default function AdminLoginPage() {
     <main className="admin-login-page">
       <section className="admin-login-card">
         <Link href="/" className="admin-login-logo" aria-label="Volver al sitio">
-          <div className="login-brand-text"><strong>DOLCE</strong><span>VINO</span></div>
+          <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
         </Link>
+
         <span className="kicker">Panel de administración</span>
         <h1>Panel de administración</h1>
 
@@ -52,6 +53,7 @@ export default function AdminLoginPage() {
               required
             />
           </label>
+
           <label>
             Contraseña
             <input
@@ -62,8 +64,12 @@ export default function AdminLoginPage() {
               required
             />
           </label>
+
           {error && <div className="admin-login-error">{error}</div>}
-          <button type="submit" disabled={loading}>{loading ? 'Ingresando...' : 'Ingresar'}</button>
+
+          <button type="submit" disabled={loading}>
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </button>
         </form>
 
         <div className="admin-login-credit">

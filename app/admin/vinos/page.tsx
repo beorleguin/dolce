@@ -8,6 +8,8 @@ import {
   Download,
   Image as ImageIcon,
   ImagePlus,
+  Eye,
+  EyeOff,
   Package,
   Pencil,
   RotateCcw,
@@ -314,6 +316,30 @@ export default function WinesAdminPage() {
       winery_id: product.winery_id,
       varietal_id: product.varietal_id,
     });
+  }
+
+  async function toggleProductVisibility(product: Product) {
+    const nextEnabled = !product.enabled;
+
+    setProducts((current) =>
+      current.map((item) =>
+        item.id === product.id ? { ...item, enabled: nextEnabled } : item,
+      ),
+    );
+
+    const { error } = await supabase
+      .from('products')
+      .update({ enabled: nextEnabled })
+      .eq('id', product.id);
+
+    if (error) {
+      setProducts((current) =>
+        current.map((item) =>
+          item.id === product.id ? { ...item, enabled: product.enabled } : item,
+        ),
+      );
+      alert(error.message);
+    }
   }
 
   async function saveProduct() {
@@ -982,7 +1008,7 @@ export default function WinesAdminPage() {
                   <th>Varietal</th>
                   <th>Precio</th>
                   <th>Caja</th>
-                  <th>Estado</th>
+                  <th>Ver</th>
                   <th className={styles.actionsHeader}>Acciones</th>
                 </tr>
               </thead>
@@ -1021,11 +1047,17 @@ export default function WinesAdminPage() {
                       )}
                     </td>
                     <td>
-                      <div className={styles.statuses}>
-                        <span className={product.enabled ? styles.visibleStatus : styles.hiddenStatus}>
-                          {product.enabled ? 'Visible' : 'Oculto'}
-                        </span>
-                        {product.featured && <span className={styles.featuredStatus}>Destacado</span>}
+                      <div className={styles.visibilityCell}>
+                        <button
+                          type="button"
+                          className={product.enabled ? styles.visibilityButton : styles.visibilityButtonOff}
+                          title={product.enabled ? 'Ocultar producto del sitio' : 'Mostrar producto en el sitio'}
+                          aria-label={product.enabled ? `Ocultar ${product.article_name || product.name}` : `Mostrar ${product.article_name || product.name}`}
+                          onClick={() => void toggleProductVisibility(product)}
+                        >
+                          {product.enabled ? <Eye size={18} /> : <EyeOff size={18} />}
+                        </button>
+                        {product.featured && <span className={styles.featuredDot} title="Destacado" />}
                       </div>
                     </td>
                     <td>

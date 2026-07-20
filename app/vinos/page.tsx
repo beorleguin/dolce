@@ -27,6 +27,7 @@ type Wine={
 
 export default function WinesPage(){
   const [menuOpen,setMenuOpen]=useState(false);
+  const [mobileDropdown,setMobileDropdown]=useState('');
   const [group,setGroup]=useState('');
   const [query,setQuery]=useState('');
   const [winery,setWinery]=useState('');
@@ -122,15 +123,16 @@ export default function WinesPage(){
         <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
       </Link>
       <nav className={menuOpen?'main-nav is-open':'main-nav'}>
-        <div className="nav-dropdown"><button className="nav-dropdown-trigger">Vinos <ChevronDown size={13}/></button><div className="nav-dropdown-panel grouped-menu-panel">{Object.keys(groups).map(label=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>{setGroup(label);setMenuOpen(false)}}>{label}</Link>)}</div></div>
+        <div className="nav-dropdown"><button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>Vinos <ChevronDown size={13}/></button><div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='vinos'?' is-mobile-open':''}`}>{Object.keys(groups).map(label=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>{setGroup(label);setMenuOpen(false);setMobileDropdown('')}}>{label}</Link>)}</div></div>
         <Link href="/#bodegas">Bodegas</Link><Link href="/#categorias">Categorías</Link><Link href="/#colecciones">Colecciones</Link><Link href="/#nosotros">Sobre nosotros</Link>
       </nav>
       <div className="header-actions">
         <button className="icon-action search-trigger" aria-label="Buscar" onClick={()=>setHeaderSearchOpen(value=>!value)}><Search size={19}/></button>
         <Link className="icon-action desktop-action" href="/admin"><UserRound size={19}/></Link>
         <button className="icon-action cart-trigger" aria-label="Pedido" onClick={()=>setCartOpen(true)}><ShoppingBag size={19}/>{cartCount>0&&<span>{cartCount}</span>}</button>
-        <button className="mobile-menu-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(value=>!value)}>{menuOpen?<X/>:<Menu/>}</button>
+        <button className="mobile-menu-button" aria-label="Abrir menú" onClick={()=>{setMenuOpen(value=>!value);if(menuOpen)setMobileDropdown('')}}>{menuOpen?<X/>:<Menu/>}</button>
       </div>
+      {menuOpen&&<button className="mobile-nav-backdrop" aria-label="Cerrar menú" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}/>}
       <div className={`header-search-panel${headerSearchOpen?' is-open':''}`}>
         <Search size={18}/>
         <input

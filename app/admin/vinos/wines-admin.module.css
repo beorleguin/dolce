@@ -978,3 +978,60 @@
   border-color:#b8c51b;
   box-shadow:0 0 0 3px rgba(198,211,21,.14);
 }
+
+
+/* Visibilidad directa desde la tabla */
+.visibilityCell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.visibilityButton,
+.visibilityButtonOff{
+  width:32px;
+  height:32px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border:1px solid #cfd3ca;
+  background:#fff;
+  cursor:pointer;
+}
+
+.visibilityButton{
+  color:#4e5b16;
+  border-color:#b9c634;
+  background:#f4f7dc;
+}
+
+.visibilityButtonOff{
+  color:#858a81;
+  background:#f1f2ee;
+}
+
+.visibilityButton:hover,
+.visibilityButtonOff:hover{
+  border-color:#9eaa19;
+  color:#20231d;
+}
+
+.featuredDot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#c6d315;
+}
+
+/* Escala tipográfica más compacta dentro de Gestión de vinos */
+.page{
+  font-size:80%;
+}
+
+.page button,
+.page input,
+.page select,
+.page textarea{
+  font-size:inherit;
+}
