@@ -960,3 +960,21 @@
   .filtersGrid > .field:nth-child(6),
   .priceField { grid-column: auto; }
 }
+
+
+.formGrid textarea{
+  width:100%;
+  min-height:112px;
+  resize:vertical;
+  border:1px solid #ccd2c7;
+  background:#fff;
+  color:#20231d;
+  padding:12px 14px;
+  outline:0;
+  font:inherit;
+  line-height:1.5;
+}
+.formGrid textarea:focus{
+  border-color:#b8c51b;
+  box-shadow:0 0 0 3px rgba(198,211,21,.14);
+}

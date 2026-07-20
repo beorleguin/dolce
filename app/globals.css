@@ -2068,3 +2068,804 @@ img{max-width:100%}
 
   .admin-table{min-width:980px!important}
 }
+
+
+/* ===== Normalización visual de imágenes de productos =====
+   Unifica fotos con fondo transparente o blanco y elimina relieves/sombras. */
+.featured-bottle,
+.catalog-product-image{
+  background:#f4f4f1!important;
+  box-shadow:none!important;
+  filter:none!important;
+  overflow:hidden!important;
+}
+
+.featured-bottle img,
+.catalog-product-image img{
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  mix-blend-mode:multiply!important;
+  opacity:1!important;
+}
+
+.featured-bottle::before,
+.featured-bottle::after,
+.catalog-product-image::before,
+.catalog-product-image::after{
+  display:none!important;
+  content:none!important;
+}
+
+
+/* ===== Fondo gris esfumado uniforme para fotografías de productos =====
+   Emula el fondo gris claro habitual de las fotos para disimular bordes
+   en imágenes JPG/PNG sin transparencia. */
+.featured-wine-card .featured-bottle,
+.catalog-product-card .catalog-product-image,
+.modal-products-grid .catalog-product-image{
+  background:
+    radial-gradient(ellipse at 50% 42%,#f7f7f4 0%,#f2f2ef 48%,#e9eae6 100%)!important;
+  border:0!important;
+  box-shadow:none!important;
+  isolation:isolate!important;
+}
+
+.featured-wine-card .featured-bottle img,
+.catalog-product-card .catalog-product-image img,
+.modal-products-grid .catalog-product-image img{
+  background:transparent!important;
+  mix-blend-mode:multiply!important;
+  filter:none!important;
+  box-shadow:none!important;
+  opacity:1!important;
+}
+
+/* Evita una franja blanca entre la foto y el pie de la tarjeta. */
+.featured-wine-card,
+.catalog-product-card{
+  background:#e9eae6!important;
+}
+
+.featured-wine-card .featured-wine-copy,
+.catalog-product-card .catalog-product-info{
+  border-top:1px solid #d6d8d1!important;
+}
+
+.featured-wine-card .featured-bottle::before,
+.featured-wine-card .featured-bottle::after,
+.catalog-product-card .catalog-product-image::before,
+.catalog-product-card .catalog-product-image::after,
+.modal-products-grid .catalog-product-image::before,
+.modal-products-grid .catalog-product-image::after{
+  display:none!important;
+  content:none!important;
+}
+
+
+/* ===== Integración final del fondo de fotografías =====
+   Fondo vertical: blanco cálido arriba y gris suave abajo.
+   El modo multiply hace que los fondos blancos/casi blancos del archivo
+   adopten el mismo degradado de la tarjeta. */
+.featured-wine-card .featured-bottle,
+.catalog-product-card .catalog-product-image,
+.modal-products-grid .catalog-product-image{
+  background:
+    linear-gradient(
+      180deg,
+      #f4f4f1 0%,
+      #f2f2ef 34%,
+      #ecece9 68%,
+      #e2e3e1 100%
+    )!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+.featured-wine-card .featured-bottle img,
+.catalog-product-card .catalog-product-image img,
+.modal-products-grid .catalog-product-image img{
+  width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:transparent!important;
+  mix-blend-mode:multiply!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+
+/* Elimina cualquier blanco residual alrededor de la fotografía. */
+.featured-wine-card,
+.catalog-product-card{
+  background:#e2e3e1!important;
+}
+
+.featured-wine-card .featured-wine-copy,
+.catalog-product-card .catalog-product-info{
+  background:linear-gradient(180deg,#e1e2de 0%,#cfd1cb 100%)!important;
+  border-top:1px solid #d0d2cc!important;
+}
+
+
+/* ===== Detalle público del producto ===== */
+.product-card-open{
+  width:100%;
+  border:0;
+  cursor:pointer;
+  font:inherit;
+}
+.product-title-button{
+  display:block;
+  width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  cursor:pointer;
+}
+.product-title-button:hover h3{color:#596100!important}
+
+.product-detail-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:360;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:rgba(0,0,0,.78);
+  backdrop-filter:blur(8px);
+}
+.product-detail-modal{
+  position:relative;
+  width:min(940px,100%);
+  max-height:90vh;
+  overflow:auto;
+  display:grid;
+  grid-template-columns:minmax(300px,44%) 1fr;
+  background:#11120f;
+  border:1px solid rgba(198,211,21,.36);
+  box-shadow:0 34px 90px rgba(0,0,0,.52);
+}
+.product-detail-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  z-index:4;
+  width:40px;
+  height:40px;
+  border:1px solid rgba(255,255,255,.2);
+  background:#0b0c0a;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.product-detail-image{
+  min-height:540px;
+  padding:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#f4f4f1 0%,#ecece9 65%,#e1e2df 100%);
+}
+.product-detail-image img{width:100%;height:100%;max-height:480px;object-fit:contain}
+.product-detail-copy{
+  padding:68px 52px 52px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.product-detail-eyebrow{color:var(--brand);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.product-detail-copy h2{margin:12px 0 10px;font-size:clamp(28px,3.2vw,46px);line-height:1.08;font-weight:300;text-transform:uppercase}
+.product-detail-winery{margin:0 0 26px;color:#9fa29a;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.product-detail-description{margin:0;color:#c7c9c2;font-size:15px;line-height:1.75}
+.product-detail-meta{margin-top:34px;padding-top:24px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:flex-end;justify-content:space-between;gap:18px}
+.product-detail-meta strong{font-size:26px;color:#fff}
+.product-detail-meta span{color:#9da198;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.product-detail-add{margin-top:22px;width:100%;height:50px;border:1px solid var(--brand);background:var(--brand);color:#11130a;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+
+/* ===== Página independiente de vinos ===== */
+.wine-listing-page{min-height:100vh;background:#080908;color:#f4f4f0}
+.wine-listing-hero{
+  min-height:430px;
+  padding:140px clamp(24px,5vw,78px) 72px;
+  display:flex;
+  align-items:flex-end;
+  background:
+    linear-gradient(90deg,rgba(5,6,5,.96),rgba(5,6,5,.64) 55%,rgba(5,6,5,.3)),
+    radial-gradient(circle at 78% 40%,rgba(198,211,21,.15),transparent 26%),
+    linear-gradient(120deg,#151713,#090a08);
+  border-bottom:1px solid rgba(198,211,21,.18);
+}
+.wine-listing-hero>div{max-width:760px}
+.wine-listing-hero span{color:var(--brand);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.wine-listing-hero h1{margin:12px 0 14px;font-size:clamp(42px,6vw,82px);font-weight:300;text-transform:uppercase}
+.wine-listing-hero p{max-width:650px;margin:0;color:#b7bab2;line-height:1.7}
+.wine-listing-content{padding:42px clamp(18px,3vw,46px) 90px}
+.wine-listing-toolbar{
+  display:grid;
+  grid-template-columns:minmax(280px,1.5fr) repeat(3,minmax(170px,1fr)) auto;
+  gap:10px;
+  padding:16px;
+  background:#11120f;
+  border:1px solid rgba(198,211,21,.18);
+}
+.wine-listing-toolbar label{height:44px;padding:0 13px;display:flex;align-items:center;gap:9px;background:#fff;color:#24261f}
+.wine-listing-toolbar input{width:100%;height:100%;border:0;outline:0;font:inherit}
+.wine-listing-toolbar select,.wine-listing-toolbar button{height:44px;padding:0 13px;border:1px solid #d7d9d2;background:#fff;color:#252720;font:inherit}
+.wine-listing-toolbar button{cursor:pointer}
+.wine-listing-count{margin:22px 0 12px;color:#9ca097;font-size:12px}
+.wine-listing-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+
+@media(max-width:1150px){
+  .wine-listing-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wine-listing-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .product-detail-backdrop{padding:10px}
+  .product-detail-modal{grid-template-columns:1fr}
+  .product-detail-image{min-height:330px;padding:28px}
+  .product-detail-copy{padding:34px 22px 26px}
+  .product-detail-meta{align-items:flex-start;flex-direction:column}
+  .wine-listing-hero{min-height:360px;padding:120px 20px 45px}
+  .wine-listing-content{padding:24px 12px 60px}
+  .wine-listing-toolbar{grid-template-columns:1fr}
+  .wine-listing-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+}
+
+
+/* ===== Navbar y separadores — ajuste final ===== */
+.site-header{
+  border-bottom:0!important;
+  box-shadow:none!important;
+}
+
+.header-shell{
+  align-items:center!important;
+}
+
+/* Logo oficial */
+.site-header .brand{
+  align-self:center!important;
+  width:92px!important;
+  height:92px!important;
+  margin-top:18px!important;
+  overflow:visible!important;
+}
+
+.site-header .brand img{
+  width:92px!important;
+  height:92px!important;
+  object-fit:contain!important;
+  display:block!important;
+  filter:none!important;
+}
+
+/* Eleva navegación y acciones para alinearlas con el centro visual del logo */
+.site-header .main-nav,
+.site-header .header-actions{
+  transform:translateY(-11px)!important;
+}
+
+/* Sin línea debajo de Bodegas destacadas */
+.prestige-strip{
+  border-bottom:0!important;
+  box-shadow:none!important;
+}
+
+/* Sin bordes alrededor del banner de catálogo */
+.premium-banner{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+
+.premium-banner::before,
+.premium-banner::after{
+  display:none!important;
+}
+
+@media(max-width:1000px){
+  .site-header .brand{
+    width:82px!important;
+    height:82px!important;
+    margin-top:14px!important;
+  }
+
+  .site-header .brand img{
+    width:82px!important;
+    height:82px!important;
+  }
+
+  .site-header .main-nav,
+  .site-header .header-actions{
+    transform:none!important;
+  }
+}
+
+@media(max-width:640px){
+  .site-header .brand{
+    width:72px!important;
+    height:72px!important;
+    margin-top:10px!important;
+  }
+
+  .site-header .brand img{
+    width:72px!important;
+    height:72px!important;
+  }
+}
+
+
+/* ===== Fondo general del sitio con viñedo ===== */
+.home-page,
+.wine-listing-page{
+  position:relative;
+  isolation:isolate;
+  background:#080908!important;
+}
+
+.home-page::before,
+.wine-listing-page::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:
+    linear-gradient(rgba(5,6,5,.85),rgba(5,6,5,.85)),
+    url('/assets/fondo_vinedo.jpg') center center / cover no-repeat;
+  pointer-events:none;
+}
+
+.home-page::after,
+.wine-listing-page::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:
+    radial-gradient(circle at 50% 0,rgba(198,211,21,.045),transparent 34%),
+    linear-gradient(180deg,rgba(4,5,4,.08),rgba(4,5,4,.35));
+  pointer-events:none;
+}
+
+/* Las secciones mantienen sus contenidos por encima del fondo. */
+.site-header,
+.hero,
+.prestige-strip,
+.featured-wines-section,
+.premium-banner,
+.catalog-grid-section,
+.wine-listing-hero,
+.wine-listing-content,
+.site-footer{
+  position:relative;
+  z-index:1;
+}
+
+/* El fondo de las secciones deja ver suavemente la fotografía. */
+.prestige-strip,
+.featured-wines-section,
+.catalog-grid-section,
+.wine-listing-content{
+  background:rgba(7,8,7,.88)!important;
+  backdrop-filter:blur(1px);
+}
+
+/* ===== Logo que se integra al navbar al hacer scroll ===== */
+.site-header{
+  transition:height .28s ease,background .28s ease,box-shadow .28s ease!important;
+}
+
+.site-header .brand,
+.site-header .brand img{
+  transition:
+    width .28s ease,
+    height .28s ease,
+    margin .28s ease,
+    transform .28s ease!important;
+}
+
+.site-header.is-compact{
+  height:66px!important;
+  background:rgba(8,9,8,.97)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.25)!important;
+}
+
+.site-header.is-compact .brand{
+  width:58px!important;
+  height:58px!important;
+  margin-top:0!important;
+  align-self:center!important;
+  transform:none!important;
+}
+
+.site-header.is-compact .brand img{
+  width:58px!important;
+  height:58px!important;
+}
+
+.site-header.is-compact .main-nav,
+.site-header.is-compact .header-actions{
+  transform:none!important;
+}
+
+@media(max-width:1000px){
+  .home-page::before,
+  .wine-listing-page::before{
+    background:
+      linear-gradient(rgba(5,6,5,.88),rgba(5,6,5,.88)),
+      url('/assets/fondo_vinedo.jpg') center center / cover no-repeat;
+  }
+
+  .site-header.is-compact .brand,
+  .site-header.is-compact .brand img{
+    width:54px!important;
+    height:54px!important;
+  }
+}
+
+@media(max-width:640px){
+  .home-page::before,
+  .wine-listing-page::before{
+    background:
+      linear-gradient(rgba(5,6,5,.9),rgba(5,6,5,.9)),
+      url('/assets/fondo_vinedo.jpg') 45% center / cover no-repeat;
+  }
+
+  .site-header.is-compact .brand,
+  .site-header.is-compact .brand img{
+    width:50px!important;
+    height:50px!important;
+  }
+}
+
+
+/* ===== Corrección definitiva: navbar fijo + logo sin recorte ===== */
+.site-header{
+  position:fixed!important;
+  top:0!important;
+  right:0!important;
+  left:0!important;
+  width:100%!important;
+  height:78px!important;
+  overflow:visible!important;
+  z-index:1000!important;
+}
+
+.header-shell{
+  height:78px!important;
+  overflow:visible!important;
+  align-items:center!important;
+}
+
+.site-header .brand{
+  position:relative!important;
+  align-self:center!important;
+  width:108px!important;
+  height:108px!important;
+  margin:0!important;
+  transform:translateY(17px)!important;
+  overflow:visible!important;
+  z-index:3!important;
+}
+
+.site-header .brand img{
+  width:108px!important;
+  height:108px!important;
+  display:block!important;
+  object-fit:contain!important;
+  overflow:visible!important;
+}
+
+.site-header .main-nav,
+.site-header .header-actions{
+  transform:translateY(0)!important;
+  align-self:center!important;
+}
+
+/* El logo se integra al navbar, pero mantiene presencia visual. */
+.site-header.is-compact{
+  position:fixed!important;
+  top:0!important;
+  height:68px!important;
+  overflow:visible!important;
+}
+
+.site-header.is-compact .header-shell{
+  height:68px!important;
+}
+
+.site-header.is-compact .brand{
+  width:72px!important;
+  height:72px!important;
+  margin:0!important;
+  transform:translateY(2px)!important;
+}
+
+.site-header.is-compact .brand img{
+  width:72px!important;
+  height:72px!important;
+}
+
+.site-header.is-compact .main-nav,
+.site-header.is-compact .header-actions{
+  transform:none!important;
+}
+
+/* Evita que el contenido quede debajo del navbar fijo. */
+.hero,
+.wine-listing-hero{
+  scroll-margin-top:78px;
+}
+
+@media(max-width:1000px){
+  .site-header,
+  .header-shell{
+    height:70px!important;
+  }
+
+  .site-header .brand,
+  .site-header .brand img{
+    width:84px!important;
+    height:84px!important;
+  }
+
+  .site-header .brand{
+    transform:translateY(10px)!important;
+  }
+
+  .site-header.is-compact,
+  .site-header.is-compact .header-shell{
+    height:64px!important;
+  }
+
+  .site-header.is-compact .brand,
+  .site-header.is-compact .brand img{
+    width:62px!important;
+    height:62px!important;
+  }
+
+  .site-header.is-compact .brand{
+    transform:translateY(1px)!important;
+  }
+}
+
+@media(max-width:640px){
+  .site-header .brand,
+  .site-header .brand img{
+    width:76px!important;
+    height:76px!important;
+  }
+
+  .site-header .brand{
+    transform:translateY(7px)!important;
+  }
+
+  .site-header.is-compact .brand,
+  .site-header.is-compact .brand img{
+    width:56px!important;
+    height:56px!important;
+  }
+}
+
+
+/* ===== Navegación móvil, búsqueda y carrito ===== */
+.header-search-panel{
+  position:absolute;
+  top:calc(100% + 8px);
+  right:24px;
+  width:min(420px,calc(100vw - 32px));
+  height:48px;
+  padding:0 12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  color:#1f211b;
+  border:1px solid rgba(198,211,21,.52);
+  box-shadow:0 18px 40px rgba(0,0,0,.38);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translateY(-8px);
+  transition:.22s ease;
+}
+.header-search-panel.is-open{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:none;
+}
+.header-search-panel input{
+  width:100%;
+  height:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#1f211b;
+  font:inherit;
+}
+.header-search-panel>button{
+  width:30px;
+  height:30px;
+  border:0;
+  background:transparent;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+/* Carrito siempre visible */
+.header-actions .cart-trigger{
+  display:grid!important;
+}
+
+/* Carrito más compacto y siempre cerrable */
+.cart-drawer{
+  width:min(360px,94vw)!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+}
+.cart-head{padding:16px 18px!important}
+.cart-head h2{font-size:21px!important}
+.cart-head button{
+  width:36px!important;
+  height:36px!important;
+  display:grid!important;
+  place-items:center!important;
+  border:1px solid #d4d6cf!important;
+  background:#fff!important;
+}
+.cart-items{padding:4px 16px!important}
+.cart-item{
+  grid-template-columns:52px minmax(0,1fr) auto!important;
+  gap:10px!important;
+  padding:11px 0!important;
+}
+.cart-item img,
+.cart-image-empty{
+  width:52px!important;
+  height:70px!important;
+}
+.cart-item h3{font-size:11px!important;line-height:1.2!important}
+.cart-item p{font-size:9px!important;margin-bottom:4px!important}
+.cart-item strong{font-size:11px!important}
+.cart-qty button{width:24px!important;height:26px!important}
+.cart-qty span{width:23px!important;font-size:10px!important}
+.cart-footer{padding:15px 18px!important}
+.cart-footer>div{margin-bottom:11px!important}
+.cart-footer strong{font-size:16px!important}
+.cart-footer>button{height:42px!important;font-size:10px!important}
+
+/* Menú móvil lateral derecho */
+@media(max-width:1000px){
+  .header-shell{
+    grid-template-columns:auto 1fr auto!important;
+  }
+
+  .header-actions{
+    justify-self:end!important;
+    gap:4px!important;
+  }
+
+  .mobile-menu-button{
+    display:grid!important;
+    order:10;
+  }
+
+  .main-nav{
+    position:fixed!important;
+    top:0!important;
+    right:0!important;
+    left:auto!important;
+    bottom:0!important;
+    width:min(330px,86vw)!important;
+    height:100dvh!important;
+    padding:92px 22px 30px!important;
+    display:flex!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    flex-direction:column!important;
+    gap:8px!important;
+    background:#0b0c0a!important;
+    border:0!important;
+    box-shadow:-22px 0 55px rgba(0,0,0,.52)!important;
+    transform:translateX(105%)!important;
+    opacity:1!important;
+    visibility:visible!important;
+    transition:transform .3s ease!important;
+    overflow-y:auto!important;
+    z-index:999!important;
+  }
+
+  .main-nav.is-open{
+    transform:translateX(0)!important;
+  }
+
+  .main-nav>a,
+  .nav-dropdown-trigger{
+    width:100%!important;
+    min-height:48px!important;
+    padding:0 12px!important;
+    justify-content:space-between!important;
+    text-align:left!important;
+    border-bottom:1px solid rgba(255,255,255,.08)!important;
+    font-size:11px!important;
+  }
+
+  .nav-dropdown{
+    width:100%!important;
+    height:auto!important;
+  }
+
+  .nav-dropdown-panel{
+    position:static!important;
+    width:100%!important;
+    min-width:0!important;
+    max-height:0!important;
+    padding:0!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    overflow:hidden!important;
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    transform:none!important;
+    border:0!important;
+    box-shadow:none!important;
+    background:#11130f!important;
+  }
+
+  .nav-dropdown:focus-within .nav-dropdown-panel{
+    max-height:420px!important;
+    padding:8px!important;
+  }
+
+  .header-search-panel{
+    top:calc(100% + 6px);
+    right:12px;
+  }
+}
+
+@media(max-width:640px){
+  .site-header .header-actions{
+    margin-left:auto!important;
+  }
+
+  .header-actions .desktop-action,
+  .catalog-button{
+    display:none!important;
+  }
+
+  .header-actions .search-trigger,
+  .header-actions .cart-trigger,
+  .mobile-menu-button{
+    width:34px!important;
+    height:34px!important;
+  }
+
+  .cart-drawer{
+    width:92vw!important;
+    max-width:330px!important;
+  }
+
+  .cart-head{padding:12px 14px!important}
+  .cart-items{padding:2px 12px!important}
+  .cart-item{
+    grid-template-columns:46px minmax(0,1fr) auto!important;
+    gap:8px!important;
+    padding:9px 0!important;
+  }
+  .cart-item img,
+  .cart-image-empty{
+    width:46px!important;
+    height:62px!important;
+  }
+  .cart-footer{padding:12px 14px!important}
+}

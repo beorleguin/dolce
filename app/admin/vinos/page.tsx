@@ -27,6 +27,7 @@ type Product = {
   id: string;
   name: string;
   article_name: string | null;
+  description: string | null;
   sku: string | null;
   price: number;
   units_per_box: number;
@@ -111,6 +112,7 @@ const EMPTY_PRODUCT: ProductDraft = {
   id: '',
   name: '',
   article_name: '',
+  description: '',
   sku: '',
   price: 0,
   units_per_box: 6,
@@ -296,6 +298,7 @@ export default function WinesAdminPage() {
       id: product.id,
       name: product.name,
       article_name: product.article_name,
+      description: product.description,
       sku: product.sku,
       price: product.price,
       units_per_box: Math.max(
@@ -323,6 +326,7 @@ export default function WinesAdminPage() {
     const payload = {
       name: draft.name.trim(),
       article_name: draft.article_name?.trim() || draft.name.trim(),
+      description: draft.description?.trim() || null,
       sku: draft.sku?.trim() || null,
       price: Number(draft.price) || 0,
       stock: 0,
@@ -375,6 +379,188 @@ export default function WinesAdminPage() {
     if (file.size > 8 * 1024 * 1024) throw new Error('La imagen supera el máximo permitido de 8 MB.');
   }
 
+
+  async function processProductImage(file: File) {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1800;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) {
+      bitmap.close();
+      throw new Error('No se pudo procesar la imagen.');
+    }
+
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const imageData = context.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+
+    // Calculamos el color predominante del fondo usando únicamente los bordes.
+    const borderSize = Math.max(3, Math.round(Math.min(width, height) * 0.025));
+    const samples: Array<[number, number, number]> = [];
+
+    const addSample = (x: number, y: number) => {
+      const index = (y * width + x) * 4;
+      const r = pixels[index];
+      const g = pixels[index + 1];
+      const b = pixels[index + 2];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+
+      // Priorizamos fondos blancos, grises o beige claros.
+      if (max >= 150 && max - min <= 55) samples.push([r, g, b]);
+    };
+
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < borderSize; x += 2) {
+        addSample(x, y);
+        addSample(width - 1 - x, y);
+      }
+    }
+    for (let x = 0; x < width; x += 2) {
+      for (let y = 0; y < borderSize; y += 2) {
+        addSample(x, y);
+        addSample(x, height - 1 - y);
+      }
+    }
+
+    const median = (values: number[]) => {
+      const sorted = [...values].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length / 2)] || 245;
+    };
+
+    const background = samples.length
+      ? {
+          r: median(samples.map((sample) => sample[0])),
+          g: median(samples.map((sample) => sample[1])),
+          b: median(samples.map((sample) => sample[2])),
+        }
+      : { r: 245, g: 245, b: 245 };
+
+    const visited = new Uint8Array(width * height);
+    const queue = new Int32Array(width * height);
+    let queueStart = 0;
+    let queueEnd = 0;
+
+    const colorDistance = (index: number) => {
+      const r = pixels[index] - background.r;
+      const g = pixels[index + 1] - background.g;
+      const b = pixels[index + 2] - background.b;
+      return Math.sqrt(r * r + g * g + b * b);
+    };
+
+    const isBackgroundPixel = (pixelIndex: number) => {
+      const dataIndex = pixelIndex * 4;
+      const r = pixels[dataIndex];
+      const g = pixels[dataIndex + 1];
+      const b = pixels[dataIndex + 2];
+      const brightness = (r + g + b) / 3;
+      const channelSpread = Math.max(r, g, b) - Math.min(r, g, b);
+      return brightness >= 142 && channelSpread <= 72 && colorDistance(dataIndex) <= 82;
+    };
+
+    const enqueue = (x: number, y: number) => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      const pixelIndex = y * width + x;
+      if (visited[pixelIndex] || !isBackgroundPixel(pixelIndex)) return;
+      visited[pixelIndex] = 1;
+      queue[queueEnd++] = pixelIndex;
+    };
+
+    // Solo eliminamos el fondo conectado a los bordes. Así se conservan
+    // etiquetas claras y detalles blancos dentro de la botella.
+    for (let x = 0; x < width; x++) {
+      enqueue(x, 0);
+      enqueue(x, height - 1);
+    }
+    for (let y = 0; y < height; y++) {
+      enqueue(0, y);
+      enqueue(width - 1, y);
+    }
+
+    while (queueStart < queueEnd) {
+      const pixelIndex = queue[queueStart++];
+      const x = pixelIndex % width;
+      const y = Math.floor(pixelIndex / width);
+      const dataIndex = pixelIndex * 4;
+      const distance = colorDistance(dataIndex);
+
+      // Borde suavizado: el fondo cercano queda transparente, y la transición
+      // conserva una pequeña suavidad para evitar contornos recortados.
+      pixels[dataIndex + 3] = distance <= 42 ? 0 : Math.round(((distance - 42) / 40) * 255);
+
+      enqueue(x - 1, y);
+      enqueue(x + 1, y);
+      enqueue(x, y - 1);
+      enqueue(x, y + 1);
+    }
+
+    context.putImageData(imageData, 0, 0);
+
+    // Recortamos el espacio transparente sobrante y dejamos un margen mínimo.
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (pixels[(y * width + x) * 4 + 3] > 18) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    const margin = Math.max(12, Math.round(Math.min(width, height) * 0.035));
+    const cropX = Math.max(0, minX - margin);
+    const cropY = Math.max(0, minY - margin);
+    const cropWidth = Math.min(width - cropX, maxX - minX + 1 + margin * 2);
+    const cropHeight = Math.min(height - cropY, maxY - minY + 1 + margin * 2);
+
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = Math.max(1, cropWidth);
+    outputCanvas.height = Math.max(1, cropHeight);
+    const outputContext = outputCanvas.getContext('2d');
+    if (!outputContext) throw new Error('No se pudo generar la imagen final.');
+
+    outputContext.drawImage(
+      canvas,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight,
+    );
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      outputCanvas.toBlob(
+        (result) => (result ? resolve(result) : reject(new Error('No se pudo convertir la imagen.'))),
+        'image/png',
+        0.95,
+      );
+    });
+
+    const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-_]+/g, '-');
+    return new File([blob], `${baseName || 'producto'}-sin-fondo.png`, {
+      type: 'image/png',
+      lastModified: Date.now(),
+    });
+  }
+
   async function deleteStorageImage(path?: string | null) {
     if (!path) return;
     const { error } = await supabase.storage.from('products').remove([path]);
@@ -387,18 +573,19 @@ export default function WinesAdminPage() {
     setBusy(true);
     try {
       validateImage(file);
+      const processedFile = await processProductImage(file);
       const previousPath = draft.image_path || null;
-      const extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const safeExtension = ['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(extension)
-        ? extension
-        : 'jpg';
       const path = `manual/${draft.id || 'nuevo'}/${Date.now()}-${Math.random()
         .toString(36)
-        .slice(2)}.${safeExtension}`;
+        .slice(2)}.png`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
-        .upload(path, file, { upsert: false, contentType: file.type || undefined });
+        .upload(path, processedFile, {
+          upsert: false,
+          contentType: 'image/png',
+          cacheControl: '31536000',
+        });
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('products').getPublicUrl(path);
@@ -560,6 +747,7 @@ export default function WinesAdminPage() {
       const rows = exported.map((product) => ({
         Producto: product.name,
         'Nombre del artículo': product.article_name || '',
+        Descripción: product.description || '',
         Código: product.sku || '',
         Categoría: product.categories?.name || '',
         Bodega: product.wineries?.name || '',
@@ -578,6 +766,7 @@ export default function WinesAdminPage() {
       worksheet['!cols'] = [
         { wch: 24 },
         { wch: 58 },
+        { wch: 70 },
         { wch: 18 },
         { wch: 20 },
         { wch: 30 },
@@ -938,6 +1127,18 @@ export default function WinesAdminPage() {
                   />
                 </label>
 
+                <label className={styles.wideField}>
+                  <span>Descripción breve</span>
+                  <textarea
+                    rows={4}
+                    maxLength={700}
+                    placeholder="Descripción del vino, perfil, ocasión recomendada o características principales."
+                    value={draft.description || ''}
+                    onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+                  />
+                  <small>{(draft.description || '').length}/700 caracteres</small>
+                </label>
+
                 <label>
                   <span>Código</span>
                   <input
@@ -1044,7 +1245,7 @@ export default function WinesAdminPage() {
                         <UploadCloud size={34} />
                         <strong>Arrastrá una imagen aquí</strong>
                         <span>o hacé clic para seleccionarla</span>
-                        <small>JPG, PNG, WEBP o AVIF · máximo 8 MB</small>
+                        <small>JPG, PNG, WEBP o AVIF · máximo 8 MB · el fondo claro se elimina automáticamente</small>
                       </div>
                     )}
                     <input

@@ -80,19 +80,28 @@ const sparklingGroups:Record<string,string[]> = {
 };
 
 const categoryGroups:Record<string,string[]> = {
+  'Destilados':['destilado','destilados','whisky','whiskey','gin','vodka','ron','licor','aperitivo','vermut','vermouth','tequila','cognac','brandy','pisco'],
   'Delicatessen':['delicatessen','delice'],
   'Cristalería':['cristaleria','copa cerveza','copa vino','vaso'],
   'Pimienta':['pimienta'],
   'Aceites':['aceite','aceite de oliva'],
   'Condimentos':['condimento','especia'],
   'Accesorios varios':['accesorio','cuchara tenedor','sacacorchos','estuche especial'],
+  'Otros':['otros'],
 };
 
 const hiddenPublicWineries=['alma del sur','deposito','dolce vino'];
 
+const cleanWineryName=(value:string)=>value
+  .replace(/\s+(s\.?\s*a\.?|s\.?\s*r\.?\s*l\.?|s\.?\s*a\.?\s*s\.?)$/i,'')
+  .replace(/\s{2,}/g,' ')
+  .trim();
+
 type PublicProduct = FeaturedWine & {
   category: string;
   sourceCategory: string;
+  brand: string;
+  description: string;
 };
 
 type ModalState =
@@ -115,9 +124,12 @@ export default function Home() {
   const [cart,setCart] = useState<CartItem[]>([]);
   const [cartOpen,setCartOpen] = useState(false);
   const [modal,setModal] = useState<ModalState>(null);
+  const [selectedProduct,setSelectedProduct] = useState<PublicProduct|null>(null);
   const [visibleWineCount,setVisibleWineCount] = useState(10);
   const [catalogQuery,setCatalogQuery] = useState('');
   const [catalogVarietal,setCatalogVarietal] = useState('');
+  const [headerCompact,setHeaderCompact] = useState(false);
+  const [headerSearchOpen,setHeaderSearchOpen] = useState(false);
 
   useEffect(() => {
     const supabase=createClient();
@@ -132,7 +144,7 @@ export default function Home() {
         for(let from=0;;from+=pageSize){
           const {data,error}=await supabase
             .from('products')
-            .select('id,name,article_name,price,units_per_box,image_url,featured,featured_order,enabled,source_category,categories(name),brands(name),wineries(name),varietals(name)')
+            .select('id,name,article_name,description,price,units_per_box,image_url,featured,featured_order,enabled,source_category,categories(name),brands(name),wineries(name),varietals(name)')
             .eq('enabled',true)
             .order('name',{ascending:true})
             .range(from,from+pageSize-1);
@@ -155,7 +167,8 @@ export default function Home() {
           id:row.id,
           name:(row.article_name||row.name||'Producto sin nombre').trim(),
           detail:row.article_name&&row.article_name!==row.name?row.name:undefined,
-          winery:(row.wineries?.name||row.brands?.name||'Dolce Vino').trim(),
+          winery:(row.wineries?.name||'').trim(),
+          brand:(row.brands?.name||'').trim(),
           varietal:(row.varietals?.name||row.categories?.name||'Otros').trim(),
           image:row.image_url||'',
           featured:!!row.featured,
@@ -164,13 +177,14 @@ export default function Home() {
           unitsPerBox:Math.max(1,Number(row.units_per_box)||inferUnitsPerBox(row.article_name,row.name)),
           category:(row.categories?.name||'').trim(),
           sourceCategory:(row.source_category||'').trim(),
+          description:(row.description||'').trim(),
         }));
 
         if(!cancelled){
           setWines(shuffleProducts(mapped));
           setFeaturedWineries((wineryRows||[])
             .filter((w:any)=>!hiddenPublicWineries.includes(normalizeLabel(w.name||'')))
-            .map((w:any)=>({name:w.name,image:w.logo_url||''})));
+            .map((w:any)=>({name:cleanWineryName(w.name),image:w.logo_url||''})));
         }
       }catch(error:any){
         console.error('No se pudo cargar el catálogo público:',error);
@@ -194,28 +208,42 @@ export default function Home() {
     };
   },[]);
 
+
+  useEffect(()=>{
+    const updateHeader=()=>setHeaderCompact(window.scrollY>120);
+    updateHeader();
+    window.addEventListener('scroll',updateHeader,{passive:true});
+    return()=>window.removeEventListener('scroll',updateHeader);
+  },[]);
+
   useEffect(()=>{
     const timer=window.setInterval(()=>setActiveSlide(v=>(v+1)%heroSlides.length),6500);
     return()=>window.clearInterval(timer);
   },[]);
 
   useEffect(()=>{
-    document.body.style.overflow=(modal||cartOpen)?'hidden':'';
+    document.body.style.overflow=(modal||selectedProduct||cartOpen)?'hidden':'';
     return()=>{document.body.style.overflow='';};
-  },[modal,cartOpen]);
+  },[modal,selectedProduct,cartOpen]);
 
   const wineCatalog=useMemo(()=>wines.filter(isWineProduct),[wines]);
   const featuredWines=useMemo(()=>{
     const selected=wineCatalog.filter(w=>w.featured).sort((a,b)=>a.order-b.order);
     return (selected.length?selected:wineCatalog).slice(0,5);
   },[wineCatalog]);
-  const wineryNames=useMemo(()=>Array.from(new Set(wines.map(w=>w.winery)))
+  const wineryNames=useMemo(()=>Array.from(new Set(
+    wineCatalog
+      .map(w=>cleanWineryName(w.winery))
+      .filter(Boolean)
+  ))
     .filter(name=>!hiddenPublicWineries.includes(normalizeLabel(name)))
-    .sort((a,b)=>a.localeCompare(b)),[wines]);
+    .sort((a,b)=>a.localeCompare(b,'es')),[wineCatalog]);
 
   const modalWines=useMemo(()=>{
     if(!modal) return [];
-    if(modal.type==='winery') return wines.filter(w=>normalizeLabel(w.winery)===normalizeLabel(modal.value));
+    if(modal.type==='winery') return wineCatalog.filter(
+      w=>normalizeLabel(cleanWineryName(w.winery))===normalizeLabel(modal.value)
+    );
     const terms=modal.terms.map(normalizeLabel);
     return wines.filter(w=>{
       const haystack=`${normalizeLabel(w.varietal)} ${normalizeLabel(w.name)} ${normalizeLabel(w.category)} ${normalizeLabel(w.sourceCategory)}`;
@@ -223,6 +251,14 @@ export default function Home() {
       if(!termMatch) return false;
       if(modal.eyebrow==='Vinos') return isWineProduct(w);
       if(modal.eyebrow==='Espumantes') return /espumante|brut|nature|demi sec|pet nat|champenoise/.test(haystack);
+      if(modal.eyebrow==='Categoría'){
+        const databaseCategory=normalizeLabel(`${w.category} ${w.sourceCategory}`);
+        if(modal.value==='Destilados'){
+          return /destilado|whisky|whiskey|gin|vodka|ron|licor|aperitivo|vermut|vermouth|tequila|cognac|brandy|pisco/.test(databaseCategory)
+            || /destilado|whisky|whiskey|gin|vodka|ron|licor|aperitivo|vermut|vermouth|tequila|cognac|brandy|pisco/.test(haystack);
+        }
+        return termMatch;
+      }
       return true;
     });
   },[modal,wines]);
@@ -233,7 +269,7 @@ export default function Home() {
     const selectedVarietal=normalizeLabel(catalogVarietal);
     return wineCatalog.filter(wine=>{
       const matchesVarietal=!selectedVarietal||normalizeLabel(wine.varietal)===selectedVarietal;
-      const haystack=normalizeLabel(`${wine.name} ${wine.winery} ${wine.varietal}`);
+      const haystack=normalizeLabel(`${wine.name} ${wine.brand} ${wine.winery} ${wine.varietal}`);
       return matchesVarietal&&(!query||haystack.includes(query));
     });
   },[wineCatalog,catalogQuery,catalogVarietal]);
@@ -261,14 +297,14 @@ export default function Home() {
   const openGroup=(value:string,terms:string[],eyebrow:string)=>{setModal({type:'group',value,terms,eyebrow});setMenuOpen(false);};
   const openWinery=(value:string)=>{setModal({type:'winery',value});setMenuOpen(false);};
 
-  const ProductCard=({wine,compact=false}:{wine:FeaturedWine;compact?:boolean})=>{
+  const ProductCard=({wine,compact=false}:{wine:PublicProduct;compact?:boolean})=>{
     const isEstuche=isEstucheProduct(wine.name,wine.detail);
     return <article className={compact?'catalog-product-card':'featured-wine-card'}>
       <div className="box-badge" aria-label={isEstuche?'Estuche, una unidad comercial':`Caja de ${wine.unitsPerBox} botellas`}><Package size={15}/><strong>x{isEstuche?1:wine.unitsPerBox}</strong></div>
-      <div className={compact?'catalog-product-image':'featured-bottle'}>{wine.image?<img src={wine.image} alt={`${wine.winery} ${wine.name}`} loading="lazy"/>:<div className="image-empty-state"><Package size={34}/><span>Sin imagen</span></div>}</div>
+      <button type="button" className={`product-card-open ${compact?'catalog-product-image':'featured-bottle'}`} onClick={()=>setSelectedProduct(wine)} aria-label={`Ver detalle de ${wine.name}`}>{wine.image?<img src={wine.image} alt={`${wine.winery} ${wine.name}`} loading="lazy"/>:<div className="image-empty-state"><Package size={34}/><span>Sin imagen</span></div>}</button>
       <div className={compact?'catalog-product-info':'featured-wine-copy'}>
-        <h3>{wine.name}</h3>
-        <p className="featured-wine-winery">{wine.winery}</p>
+        <button type="button" className="product-title-button" onClick={()=>setSelectedProduct(wine)}><h3>{wine.name}</h3></button>
+        {wine.winery&&<p className="featured-wine-winery">{cleanWineryName(wine.winery)}</p>}
         <div className="featured-price">{formatPrice(wine.pricePerUnit)} {!isEstuche&&<small>c/botella</small>}</div>
         <button className="add-box-button" onClick={()=>addBox(wine)}>{isEstuche?'Agregar estuche':'Agregar caja'}</button>
       </div>
@@ -276,12 +312,14 @@ export default function Home() {
   };
 
   return <main className="home-page">
-    <header className="site-header"><div className="header-shell">
-      <Link href="#inicio" className="brand brand-text" aria-label="Dolce Vino - Inicio"><strong>DOLCE</strong><span>VINO</span></Link>
+    <header className={`site-header${headerCompact?' is-compact':''}`}><div className="header-shell">
+      <Link href="/" className="brand" aria-label="Dolce Vino - Inicio">
+        <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
+      </Link>
       <nav className={menuOpen?'main-nav is-open':'main-nav'} aria-label="Navegación principal">
         <div className="nav-dropdown">
           <button className="nav-dropdown-trigger">Vinos <ChevronDown size={13}/></button>
-          <div className="nav-dropdown-panel grouped-menu-panel">{Object.entries(wineGroups).map(([label,terms])=><button key={label} onClick={()=>openGroup(label,terms,'Vinos')}>{label}</button>)}</div>
+          <div className="nav-dropdown-panel grouped-menu-panel">{Object.entries(wineGroups).map(([label])=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>setMenuOpen(false)}>{label}</Link>)}</div>
         </div>
         <div className="nav-dropdown">
           <button className="nav-dropdown-trigger">Espumantes <ChevronDown size={13}/></button>
@@ -298,11 +336,22 @@ export default function Home() {
         <a href="#colecciones" onClick={()=>setMenuOpen(false)}>Colecciones</a><a href="#nosotros" onClick={()=>setMenuOpen(false)}>Sobre nosotros</a>
       </nav>
       <div className="header-actions">
-        <button className="icon-action" aria-label="Buscar"><Search size={19}/></button>
+        <button className="icon-action search-trigger" aria-label="Buscar" onClick={()=>setHeaderSearchOpen(value=>!value)}><Search size={19}/></button>
         <Link className="icon-action desktop-action" href="/admin" aria-label="Mi cuenta"><UserRound size={19}/></Link>
-        <button className="icon-action desktop-action cart-trigger" aria-label="Pedido" onClick={()=>setCartOpen(true)}><ShoppingBag size={19}/>{cartBoxes>0&&<span>{cartBoxes}</span>}</button>
+        <button className="icon-action cart-trigger" aria-label="Pedido" onClick={()=>setCartOpen(true)}><ShoppingBag size={19}/>{cartBoxes>0&&<span>{cartBoxes}</span>}</button>
         <a className="catalog-button" href="#catalogo">Catálogo</a>
-        <button className="mobile-menu-button" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?<X/>:<Menu/>}</button>
+        <button className="mobile-menu-button" aria-label="Abrir menú" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?<X/>:<Menu/>}</button>
+      </div>
+      <div className={`header-search-panel${headerSearchOpen?' is-open':''}`}>
+        <Search size={18}/>
+        <input
+          autoFocus={headerSearchOpen}
+          value={catalogQuery}
+          onChange={event=>setCatalogQuery(event.target.value)}
+          onKeyDown={event=>{if(event.key==='Enter'){document.getElementById('vinos')?.scrollIntoView({behavior:'smooth'});setHeaderSearchOpen(false);}}}
+          placeholder="Buscar vino, bodega o varietal"
+        />
+        {catalogQuery&&<button type="button" onClick={()=>setCatalogQuery('')} aria-label="Limpiar búsqueda"><X size={16}/></button>}
       </div>
     </div></header>
 
@@ -377,6 +426,29 @@ export default function Home() {
       <div className="modal-title"><span>{modal.type==='winery'?'Bodega':modal.eyebrow}</span><h2>{modal.value}</h2></div>
       {modalWines.length?<div className="modal-products-grid">{modalWines.map(w=><ProductCard key={w.id} wine={w} compact/>)}</div>:<p className="modal-empty">Todavía no hay productos visibles en esta selección.</p>}
     </section></div>}
+
+
+    {selectedProduct&&<div className="product-detail-backdrop" onMouseDown={()=>setSelectedProduct(null)}>
+      <section className="product-detail-modal" onMouseDown={event=>event.stopPropagation()}>
+        <button type="button" className="product-detail-close" onClick={()=>setSelectedProduct(null)} aria-label="Cerrar detalle"><X/></button>
+        <div className="product-detail-image">
+          {selectedProduct.image?<img src={selectedProduct.image} alt={selectedProduct.name}/>:<div className="image-empty-state"><Package size={48}/><span>Sin imagen</span></div>}
+        </div>
+        <div className="product-detail-copy">
+          <span className="product-detail-eyebrow">{selectedProduct.varietal||'Selección Dolce Vino'}</span>
+          <h2>{selectedProduct.name}</h2>
+          {selectedProduct.winery&&<p className="product-detail-winery">{cleanWineryName(selectedProduct.winery)}</p>}
+          <p className="product-detail-description">{selectedProduct.description||'Una etiqueta seleccionada por Dolce Vino para disfrutar y compartir en ocasiones especiales.'}</p>
+          <div className="product-detail-meta">
+            <strong>{formatPrice(selectedProduct.pricePerUnit)}</strong>
+            <span>{isEstucheProduct(selectedProduct.name,selectedProduct.detail)?'Precio total del estuche':`Caja x${selectedProduct.unitsPerBox}`}</span>
+          </div>
+          <button type="button" className="product-detail-add" onClick={()=>addBox(selectedProduct)}>
+            {isEstucheProduct(selectedProduct.name,selectedProduct.detail)?'Agregar estuche':'Agregar caja'}
+          </button>
+        </div>
+      </section>
+    </div>}
 
     <div className={cartOpen?'cart-overlay is-open':'cart-overlay'} onClick={()=>setCartOpen(false)}/>
     <aside className={cartOpen?'cart-drawer is-open':'cart-drawer'}><div className="cart-head"><div><span>Dolce Vino</span><h2>Tu pedido</h2></div><button onClick={()=>setCartOpen(false)}><X/></button></div><div className="cart-items">{!cart.length&&<p className="empty-cart">Todavía no agregaste cajas.</p>}{cart.map(i=>{const isEstuche=isEstucheProduct(i.name,i.detail);const lineTotal=(isEstuche?i.pricePerUnit:i.pricePerUnit*i.unitsPerBox)*i.boxes;return <article className="cart-item" key={i.id}>{i.image?<img src={i.image} alt={i.name}/>:<div className="cart-image-empty"><Package size={20}/></div>}<div><h3>{i.name}</h3><p>{isEstuche?'1 estuche por unidad':`${i.unitsPerBox} botellas por caja`}</p><strong>{formatPrice(lineTotal)}</strong></div><div className="cart-qty"><button onClick={()=>changeBoxes(i.id,-1)}><Minus size={14}/></button><span>{i.boxes}</span><button onClick={()=>changeBoxes(i.id,1)}><Plus size={14}/></button></div></article>})}</div><div className="cart-footer"><div><span>Total estimado</span><strong>{formatPrice(cartTotal)}</strong></div><button disabled={!cart.length}>Solicitar pedido</button></div></aside>
