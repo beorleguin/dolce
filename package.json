@@ -1,0 +1,38 @@
+{
+  "name": "dolce_vino",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "catalog:prepare": "node --env-file=.env.local scripts/prepare-catalog.mjs",
+    "supabase:import": "node --env-file=.env.local scripts/import-supabase.mjs",
+    "supabase:create-admin": "node --env-file=.env.local scripts/create-admin.mjs",
+    "supabase:repair-products": "node --env-file=.env.local scripts/repair-product-classification.mjs --apply",
+    "supabase:classification:preview": "node --env-file=.env.local scripts/repair-product-classification.mjs",
+    "supabase:classification:apply": "node --env-file=.env.local scripts/repair-product-classification.mjs --apply",
+    "supabase:clear-images": "node --env-file=.env.local scripts/clear-catalog-images.mjs",
+    "supabase:units:preview": "node --env-file=.env.local scripts/repair-units-per-box.mjs",
+    "supabase:units:apply": "node --env-file=.env.local scripts/repair-units-per-box.mjs --apply"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "lucide-react": "^0.468.0",
+    "next": "14.2.15",
+    "pdf-lib": "^1.17.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.15",
+    "typescript": "^5.7.2"
+  }
+}

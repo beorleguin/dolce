@@ -1,0 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
+const [email,password,fullName='Administrador']=process.argv.slice(2);
+if(!email||!password) throw new Error('Uso: npm run supabase:create-admin -- correo@dominio.com Contraseña "Nombre"');
+const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key=process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase=createClient(url,key,{auth:{persistSession:false}});
+const {data,error}=await supabase.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{full_name:fullName}});
+if(error) throw error;
+await supabase.from('profiles').update({role:'admin',active:true,full_name:fullName}).eq('id',data.user.id);
+console.log(`Administrador creado: ${email}`);
