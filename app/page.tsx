@@ -584,7 +584,7 @@ export default function Home() {
             </div>
             <div className="cta-strip-copy">
               <small>Descargá nuestro catálogo</small>
-              <h3>Edición 2024</h3>
+              <h3>Edición 2026</h3>
               <p>Una selección exclusiva, detallada para los verdaderos amantes del vino.</p>
             </div>
             <div className="cta-strip-action">
