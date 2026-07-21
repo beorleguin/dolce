@@ -5,6 +5,7 @@ import { Menu, Search, UserRound, ShoppingBag, X, Package, Minus, Plus, ChevronD
 import { useEffect, useMemo, useState } from 'react';
 import { formatPrice, getCartFromStorage, saveCartToStorage, type CartItem, type FeaturedWine } from '@/lib/featuredWines';
 import { createClient } from '@/lib/supabase/client';
+import { catalogSlug, publicWineMenuGroups } from '@/lib/catalogRoutes';
 
 const fallbackHeroSlides = [
   { eyebrow:'Pasión · tradición · excelencia', title:'Vinos que cuentan historias únicas', description:'Una selección cuidada de vinos y etiquetas elegidas para quienes valoran cada detalle.', cta:'Descubrir selección', desktopImage:'', mobileImage:'' },
@@ -72,16 +73,6 @@ const shuffleProducts=<T,>(items:T[])=>{
   return copy;
 };
 
-const wineGroups:Record<string,string[]> = {
-  'Malbec':['malbec','malbec organico','malbec fortificado','malbec rose','blanc de malbec','noir de malbec'],
-  'Cabernet':['cabernet sauvignon','cabernet franc','carmenere'],
-  'Blend':['blend','red blend','corte de autor','assamblage','assemblage','mix varietales','mix de varietales'],
-  'Dulces':['dulce','dulce natural','chardonnay dulce','chenin dulce','moscatel dulce','sauvignon blanc dulce','cosecha tardia blanco','cosecha tardia tinto'],
-  'Blancos':['chardonnay','sauvignon blanc','chenin','torrontes','semillon','riesling','viognier','gewurztraminer','albarino'],
-  'Tintos':['bonarda','merlot','pinot noir','syrah','tempranillo','petit verdot','sangiovese','ancellotta'],
-  'Rosados':['rose','rosado'],
-};
-
 const sparklingGroups:Record<string,string[]> = {
   'Nature':['nature','brut nature'],
   'Extra Brut':['extra brut','extra brut rose'],
@@ -143,7 +134,7 @@ export default function Home() {
   const [headerCompact,setHeaderCompact] = useState(false);
   const [headerSearchOpen,setHeaderSearchOpen] = useState(false);
   const [catalogPdfUrl,setCatalogPdfUrl] = useState('/catalogo.pdf');
-  const [heroBanners,setHeroBanners] = useState(fallbackHeroSlides);
+  const [heroBanners,setHeroBanners] = useState<typeof fallbackHeroSlides>([]);
   const [middleBanner,setMiddleBanner] = useState<PublicBanner|null>(null);
 
   useEffect(() => {
@@ -198,7 +189,7 @@ export default function Home() {
 
         const {data:bannerRows,error:bannerError}=await supabase
           .from('site_banners')
-          .select('id,type,title,subtitle,desktop_image_url,mobile_image_url,enabled,sort_order')
+          .select('id,type,title,subtitle,desktop_image_url,mobile_image_url,enabled,sort_order,updated_at')
           .eq('enabled',true)
           .in('type',['hero','middle'])
           .order('sort_order',{ascending:true});
@@ -235,14 +226,27 @@ export default function Home() {
               title:(banner.title||'').trim(),
               description:'',
               cta:'',
-              desktopImage:banner.desktop_image_url||'',
-              mobileImage:banner.mobile_image_url||banner.desktop_image_url||'',
-              key:banner.id||`hero-${index}`,
+              desktopImage:banner.desktop_image_url
+                ? `${banner.desktop_image_url}${banner.desktop_image_url.includes('?')?'&':'?'}v=${encodeURIComponent(banner.updated_at||banner.id||index)}`
+                : '',
+              mobileImage:(banner.mobile_image_url||banner.desktop_image_url)
+                ? `${banner.mobile_image_url||banner.desktop_image_url}${(banner.mobile_image_url||banner.desktop_image_url).includes('?')?'&':'?'}v=${encodeURIComponent(banner.updated_at||banner.id||index)}`
+                : '',
+              key:`${banner.id||`hero-${index}`}-${banner.updated_at||''}`,
             }));
 
-          setHeroBanners(publicHeroBanners.length?publicHeroBanners:fallbackHeroSlides);
+          setHeroBanners(publicHeroBanners);
+          const middleRow=(bannerRows||[]).find((banner:any)=>banner.type==='middle'&&banner.desktop_image_url)||null;
           setMiddleBanner(
-            ((bannerRows||[]).find((banner:any)=>banner.type==='middle'&&banner.desktop_image_url)||null) as PublicBanner|null,
+            middleRow
+              ? {
+                  ...middleRow,
+                  desktop_image_url:`${middleRow.desktop_image_url}${middleRow.desktop_image_url.includes('?')?'&':'?'}v=${encodeURIComponent(middleRow.updated_at||middleRow.id||'middle')}`,
+                  mobile_image_url:middleRow.mobile_image_url
+                    ? `${middleRow.mobile_image_url}${middleRow.mobile_image_url.includes('?')?'&':'?'}v=${encodeURIComponent(middleRow.updated_at||middleRow.id||'middle-mobile')}`
+                    : '',
+                }
+              : null,
           );
         }
       }catch(error:any){
@@ -390,20 +394,24 @@ export default function Home() {
           <X size={22}/>
         </button>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>Vinos <ChevronDown size={13}/></button>
-          <div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='vinos'?' is-mobile-open':''}`}>{Object.entries(wineGroups).map(([label])=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>{label}</Link>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>
+            Vinos <ChevronDown size={13}/>
+          </button>
         </div>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='espumantes'?'':'espumantes')}>Espumantes <ChevronDown size={13}/></button>
-          <div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='espumantes'?' is-mobile-open':''}`}>{Object.entries(sparklingGroups).map(([label,terms])=><button key={label} onClick={()=>{openGroup(label,terms,'Espumantes');setMenuOpen(false);setMobileDropdown('')}}>{label}</button>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='espumantes'?'':'espumantes')}>
+            Espumantes <ChevronDown size={13}/>
+          </button>
         </div>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='bodegas'?'':'bodegas')}>Bodegas <ChevronDown size={13}/></button>
-          <div className={`nav-dropdown-panel winery-panel${mobileDropdown==='bodegas'?' is-mobile-open':''}`}>{wineryNames.map(w=><button key={w} onClick={()=>{openWinery(w);setMenuOpen(false);setMobileDropdown('')}}>{w}</button>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='bodegas'?'':'bodegas')}>
+            Bodegas <ChevronDown size={13}/>
+          </button>
         </div>
         <div className="nav-dropdown">
-          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='categorias'?'':'categorias')}>Categorías <ChevronDown size={13}/></button>
-          <div className={`nav-dropdown-panel category-menu-panel${mobileDropdown==='categorias'?' is-mobile-open':''}`}>{Object.entries(categoryGroups).map(([label,terms])=><button key={label} onClick={()=>{openGroup(label,terms,'Categoría');setMenuOpen(false);setMobileDropdown('')}}>{label}</button>)}</div>
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='categorias'?'':'categorias')}>
+            Categorías <ChevronDown size={13}/>
+          </button>
         </div>
         <a href="#colecciones" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Colecciones</a>
         <a href="#nosotros" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Sobre nosotros</a>
@@ -433,10 +441,81 @@ export default function Home() {
       </div>
     </div></header>
 
-    <section id="inicio" className="hero">
+    {mobileDropdown&&<>
+      <button
+        type="button"
+        className="nav-drawer-backdrop"
+        aria-label="Cerrar desplegable"
+        onClick={()=>setMobileDropdown('')}
+      />
+      <aside className="nav-global-drawer" aria-label={`Menú ${mobileDropdown}`}>
+        <div className="nav-drawer-head">
+          <div>
+            <span>Explorar</span>
+            <strong>
+              {mobileDropdown==='vinos'
+                ? 'Vinos'
+                : mobileDropdown==='espumantes'
+                  ? 'Espumantes'
+                  : mobileDropdown==='bodegas'
+                    ? 'Bodegas'
+                    : 'Categorías'}
+            </strong>
+          </div>
+          <button type="button" aria-label="Cerrar menú" onClick={()=>setMobileDropdown('')}>
+            <X size={20}/>
+          </button>
+        </div>
+
+        <div className={`nav-drawer-list${mobileDropdown==='bodegas'?' nav-drawer-list--wineries':''}`}>
+          {mobileDropdown==='vinos'&&publicWineMenuGroups.map(item=>
+            <Link
+              key={item.slug}
+              href={`/vinos/${item.slug}`}
+              onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {item.label}
+            </Link>
+          )}
+
+          {mobileDropdown==='espumantes'&&Object.keys(sparklingGroups).map(label=>
+            <Link
+              key={label}
+              href={`/espumantes/${catalogSlug(label)}`}
+              onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {label}
+            </Link>
+          )}
+
+          {mobileDropdown==='bodegas'&&wineryNames.map(w=>
+            <Link
+              key={w}
+              href={`/bodegas/${catalogSlug(w)}`}
+              onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {w}
+            </Link>
+          )}
+
+          {mobileDropdown==='categorias'&&Object.entries(categoryGroups).map(([label,terms])=>
+            <button
+              key={label}
+              type="button"
+              onClick={()=>{openGroup(label,terms,'Categoría');setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {label}
+            </button>
+          )}
+        </div>
+      </aside>
+    </>}
+
+    <section id="inicio" className={`hero${heroBanners.length?' has-crm-banners':' is-loading-banners'}`}>
       {heroBanners.map((slide,index)=><div
         key={(slide as any).key||slide.desktopImage||slide.title||index}
         className={`hero-slide hero-slide--${index+1} ${index===activeSlide?'is-active':''}`}
+        style={{ transform:`translate3d(${(index-activeSlide)*100}%,0,0)` }}
       >
         {slide.desktopImage&&<picture className="hero-banner-picture">
           <source media="(max-width: 700px)" srcSet={slide.mobileImage||slide.desktopImage}/>

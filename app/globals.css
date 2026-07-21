@@ -3420,148 +3420,333 @@ img{max-width:100%}
 }
 
 
-/* ===== Ajuste final navbar, desplegables y banner central ===== */
-
-/* El logo queda completamente contenido en el navbar.
-   No se superpone ni forma parte visual de los banners. */
-.site-header .brand,
-.site-header.is-compact .brand{
-  width:76px!important;
-  height:76px!important;
-  margin:0!important;
-  transform:none!important;
-  align-self:center!important;
+/* ===== Navbar funcional en páginas internas ===== */
+.nav-global-drawer{
+  position:fixed!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  left:auto!important;
+  z-index:5002!important;
+  width:min(390px,90vw)!important;
+  height:100dvh!important;
+  display:flex!important;
+  flex-direction:column!important;
   overflow:hidden!important;
+  border-left:1px solid rgba(198,211,21,.28)!important;
+  background:rgba(8,9,8,.99)!important;
+  box-shadow:-24px 0 70px rgba(0,0,0,.55)!important;
 }
 
-.site-header .brand img,
-.site-header.is-compact .brand img{
-  width:76px!important;
-  height:76px!important;
-  object-fit:contain!important;
+.nav-drawer-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:5000!important;
+  border:0!important;
+  background:rgba(0,0,0,.56)!important;
+  backdrop-filter:blur(4px)!important;
 }
 
-.site-header,
-.header-shell{
+.nav-global-drawer .nav-drawer-head{
+  min-height:96px!important;
+  padding:20px 18px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  flex:0 0 auto!important;
+  border-bottom:1px solid rgba(255,255,255,.09)!important;
+}
+
+.nav-global-drawer .nav-drawer-head>div{
+  display:grid!important;
+  gap:4px!important;
+}
+
+.nav-global-drawer .nav-drawer-head span{
+  color:#7e8479!important;
+  font-size:9px!important;
+  font-weight:700!important;
+  letter-spacing:.18em!important;
+  text-transform:uppercase!important;
+}
+
+.nav-global-drawer .nav-drawer-head strong{
+  display:block!important;
+  color:#fff!important;
+  font-size:21px!important;
+  line-height:1.15!important;
+  font-weight:500!important;
+  letter-spacing:.04em!important;
+  text-transform:uppercase!important;
+}
+
+.nav-global-drawer .nav-drawer-head>button{
+  width:40px!important;
+  height:40px!important;
+  min-width:40px!important;
+  min-height:40px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  background:#11130f!important;
+  color:#fff!important;
+  cursor:pointer!important;
+}
+
+.nav-global-drawer .nav-drawer-list{
+  min-height:0!important;
+  flex:1 1 auto!important;
+  padding:10px 14px 24px!important;
+  overflow-y:auto!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#c6d315 #11130f!important;
+}
+
+.nav-global-drawer .nav-drawer-list a,
+.nav-global-drawer .nav-drawer-list button{
+  width:100%!important;
+  min-height:48px!important;
+  padding:0 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  border:0!important;
+  border-bottom:1px solid rgba(255,255,255,.07)!important;
+  background:transparent!important;
+  color:#d9dcd5!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  text-align:left!important;
+  text-decoration:none!important;
+  cursor:pointer!important;
+}
+
+.nav-global-drawer .nav-drawer-list a::after,
+.nav-global-drawer .nav-drawer-list button::after{
+  content:"›";
+  color:#70766c;
+  font-size:17px;
+}
+
+.nav-global-drawer .nav-drawer-list a:hover,
+.nav-global-drawer .nav-drawer-list button:hover{
+  padding-left:15px!important;
+  background:#15180f!important;
+  color:#d6e000!important;
+}
+
+/* Los controles del navbar deben quedar por encima del contenido interno. */
+.wine-listing-page .site-header{
+  z-index:3000!important;
+}
+
+.wine-listing-page .header-shell{
+  position:relative!important;
+  z-index:3001!important;
   overflow:visible!important;
 }
 
-/* Menús del navbar más claros y fáciles de recorrer */
-@media(min-width:1001px){
-  .nav-dropdown-panel{
-    top:calc(100% + 10px)!important;
-    padding:12px!important;
-    border:1px solid rgba(198,211,21,.28)!important;
-    background:rgba(9,10,8,.98)!important;
-    box-shadow:0 22px 54px rgba(0,0,0,.42)!important;
+.wine-listing-page .main-nav{
+  overflow:visible!important;
+}
+
+@media(max-width:700px){
+  .nav-global-drawer{
+    width:min(340px,88vw)!important;
   }
 
-  .grouped-menu-panel{
-    width:390px!important;
-    min-width:390px!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:4px 8px!important;
+  .nav-global-drawer .nav-drawer-head{
+    min-height:82px!important;
+    padding:16px!important;
   }
 
-  .grouped-menu-panel a,
-  .grouped-menu-panel button,
-  .category-menu-panel button{
-    min-height:42px!important;
-    padding:0 14px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:flex-start!important;
-    border:1px solid transparent!important;
-    background:transparent!important;
-    color:#d9dcd5!important;
-    font-size:11px!important;
-    font-weight:600!important;
-    letter-spacing:.04em!important;
-    text-transform:none!important;
-    text-align:left!important;
-  }
-
-  .grouped-menu-panel a:hover,
-  .grouped-menu-panel button:hover,
-  .category-menu-panel button:hover{
-    border-color:rgba(198,211,21,.22)!important;
-    background:#171a11!important;
-    color:#d6e000!important;
-  }
-
-  .winery-panel{
-    width:min(920px,calc(100vw - 64px))!important;
-    min-width:720px!important;
-    max-height:520px!important;
-    padding:14px!important;
-    grid-template-columns:repeat(3,minmax(0,1fr))!important;
-    gap:4px 12px!important;
-  }
-
-  .winery-panel button{
-    min-height:42px!important;
-    padding:0 12px!important;
-    display:flex!important;
-    align-items:center!important;
-    border:1px solid transparent!important;
-    background:transparent!important;
-    color:#d7dad3!important;
-    font-size:11px!important;
-    text-align:left!important;
-  }
-
-  .winery-panel button:hover{
-    border-color:rgba(198,211,21,.22)!important;
-    background:#171a11!important;
-    color:#d6e000!important;
+  .nav-global-drawer .nav-drawer-head strong{
+    font-size:18px!important;
   }
 }
 
-/* Banner central: ancho completo y exactamente la mitad de alto del hero.
-   Desktop recomendado 1920×410. Mobile recomendado 1080×750. */
+
+/* ===== Páginas dedicadas de varietales, espumantes y bodegas ===== */
+.winery-only-toolbar{
+  grid-template-columns:minmax(240px,360px) auto!important;
+  justify-content:flex-start!important;
+}
+
+.catalog-empty-results{
+  margin-top:24px;
+  padding:34px;
+  border:1px solid rgba(198,211,21,.25);
+  background:rgba(10,12,9,.76);
+  color:#c8ccc3;
+  text-align:center;
+}
+
+.catalog-product-info .featured-wine-winery,
+.product-detail-winery{
+  color:#7d8478;
+  text-decoration:none;
+}
+
+.catalog-product-info .featured-wine-winery:hover,
+.product-detail-winery:hover{
+  color:#bfcf1e;
+}
+
+@media(max-width:700px){
+  .winery-only-toolbar{
+    grid-template-columns:1fr!important;
+  }
+}
+
+
+/* =================================================================
+   AJUSTE DEFINITIVO — BANNER CENTRAL 1920×410
+   ================================================================= */
+.featured-wines-section{
+  padding-bottom:18px!important;
+}
+
 .premium-banner,
 .premium-banner--uploaded{
-  width:100%!important;
+  position:relative!important;
+  left:50%!important;
+  right:auto!important;
+  width:100vw!important;
   max-width:none!important;
   height:auto!important;
   min-height:0!important;
-  aspect-ratio:1920/410!important;
-  margin-left:0!important;
-  margin-right:0!important;
+  aspect-ratio:1920 / 410!important;
+  margin:0!important;
+  transform:translateX(-50%)!important;
+  overflow:hidden!important;
   border:0!important;
+  background:#080908!important;
 }
 
-.premium-banner--uploaded .premium-banner-picture,
-.premium-banner-picture{
+.premium-banner-picture,
+.premium-banner--uploaded .premium-banner-picture{
   position:absolute!important;
   inset:0!important;
-}
-
-.premium-banner--uploaded .premium-banner-picture img,
-.premium-banner-picture img{
   width:100%!important;
   height:100%!important;
+}
+
+.premium-banner-picture img,
+.premium-banner--uploaded .premium-banner-picture img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
   object-fit:cover!important;
   object-position:center!important;
 }
 
+.premium-banner--uploaded .premium-banner-shade{
+  display:none!important;
+}
+
+.premium-banner + .catalog-grid-section{
+  margin-top:0!important;
+  padding-top:24px!important;
+}
+
 @media(max-width:700px){
-  .site-header .brand,
-  .site-header.is-compact .brand,
-  .site-header .brand img,
-  .site-header.is-compact .brand img{
-    width:56px!important;
-    height:56px!important;
+  .featured-wines-section{
+    padding-bottom:12px!important;
   }
 
   .premium-banner,
   .premium-banner--uploaded{
-    width:100%!important;
-    aspect-ratio:1080/750!important;
+    width:100vw!important;
+    aspect-ratio:1080 / 750!important;
   }
 
-  .premium-banner--uploaded .premium-banner-picture img,
-  .premium-banner-picture img{
+  .premium-banner-picture img,
+  .premium-banner--uploaded .premium-banner-picture img{
     object-fit:cover!important;
+    object-position:center!important;
+  }
+
+  .premium-banner + .catalog-grid-section{
+    padding-top:18px!important;
+  }
+}
+
+
+/* =================================================================
+   HERO FINAL: 1920x820 visibles, sin quedar detrás del navbar
+   ================================================================= */
+:root{
+  --public-navbar-height:78px;
+}
+
+.site-header{
+  height:var(--public-navbar-height)!important;
+}
+
+.header-shell{
+  height:var(--public-navbar-height)!important;
+}
+
+/* El hero empieza después del navbar fijo.
+   La imagen cargada conserva completos sus 1920x820 px. */
+.hero{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1920 / 820!important;
+  margin-top:var(--public-navbar-height)!important;
+  position:relative!important;
+  overflow:hidden!important;
+}
+
+/* Carrusel horizontal normal: sin fade, sin zoom y sin fundidos. */
+.hero-slide{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  opacity:1!important;
+  transition:transform .65s cubic-bezier(.22,.61,.36,1)!important;
+  will-change:transform!important;
+  background:none!important;
+}
+
+.hero-slide.is-active{
+  opacity:1!important;
+}
+
+.hero-banner-picture,
+.hero-banner-picture img{
+  width:100%!important;
+  height:100%!important;
+}
+
+.hero-banner-picture img{
+  display:block!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  transform:none!important;
+  animation:none!important;
+}
+
+.hero-copy{
+  animation:none!important;
+}
+
+@media(max-width:1000px){
+  :root{
+    --public-navbar-height:64px;
+  }
+
+  .site-header,
+  .header-shell{
+    height:var(--public-navbar-height)!important;
+  }
+
+  .hero{
+    margin-top:var(--public-navbar-height)!important;
+    aspect-ratio:1080 / 1500!important;
   }
 }
