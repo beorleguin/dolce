@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, Search, UserRound, ShoppingBag, X, Package, Minus, Plus, ChevronDown, ChevronRight, MessageCircle, Truck, ShieldCheck, Sparkles, Globe2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -370,7 +371,12 @@ export default function Home() {
     const isEstuche=isEstucheProduct(wine.name,wine.detail);
     return <article className={compact?'catalog-product-card':'featured-wine-card'}>
       <div className="box-badge" aria-label={isEstuche?'Estuche, una unidad comercial':`Caja de ${wine.unitsPerBox} botellas`}><Package size={15}/><strong>x{isEstuche?1:wine.unitsPerBox}</strong></div>
-      <button type="button" className={`product-card-open ${compact?'catalog-product-image':'featured-bottle'}`} onClick={()=>setSelectedProduct(wine)} aria-label={`Ver detalle de ${wine.name}`}>{wine.image?<img src={wine.image} alt={`${wine.winery} ${wine.name}`} loading="lazy"/>:<div className="image-empty-state"><Package size={34}/><span>Sin imagen</span></div>}</button>
+      <button type="button" className={`product-card-open ${compact?'catalog-product-image':'featured-bottle'}`} onClick={()=>setSelectedProduct(wine)} aria-label={`Ver detalle de ${wine.name}`}>{wine.image?<Image
+        src={wine.image}
+        alt={`${wine.winery} ${wine.name}`}
+        fill
+        sizes={compact?'(max-width: 700px) 50vw, (max-width: 1200px) 33vw, 20vw':'(max-width: 700px) 50vw, 20vw'}
+      />:<div className="image-empty-state"><Package size={34}/><span>Sin imagen</span></div>}</button>
       <div className={compact?'catalog-product-info':'featured-wine-copy'}>
         <button type="button" className="product-title-button" onClick={()=>setSelectedProduct(wine)}><h3>{wine.name}</h3></button>
         {wine.winery&&<p className="featured-wine-winery">{cleanWineryName(wine.winery)}</p>}
@@ -471,7 +477,7 @@ export default function Home() {
   return <main className="home-page">
     <header className={`site-header${headerCompact?' is-compact':''}`}><div className="header-shell">
       <Link href="/" className="brand" aria-label="Dolce Vino - Inicio">
-        <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
+        <Image src="/assets/logo_dolce_vino.png" alt="Dolce Vino" width={108} height={108} priority />
       </Link>
       <nav className={menuOpen?'main-nav is-open':'main-nav'} aria-label="Navegación principal">
         <button
@@ -628,7 +634,7 @@ export default function Home() {
       </div>}
     </section>
 
-    <section id="bodegas" className="prestige-strip"><div className="prestige-inner"><div className="featured-section-title"><span/><h2>Bodegas destacadas</h2><span/></div><div className="winery-marks">{featuredWineries.length?featuredWineries.map(w=><article className="winery-mark" key={w.name}>{w.image?<img className="winery-logo" src={w.image} alt={`Logo de ${w.name}`}/>:<span className="winery-name-fallback">{w.name}</span>}</article>):<p className="public-empty-message">Las bodegas destacadas se administran desde el CRM.</p>}</div></div></section>
+    <section id="bodegas" className="prestige-strip"><div className="prestige-inner"><div className="featured-section-title"><span/><h2>Bodegas destacadas</h2><span/></div><div className="winery-marks">{featuredWineries.length?featuredWineries.map(w=><article className="winery-mark" key={w.name}>{w.image?<Image className="winery-logo" src={w.image} alt={`Logo de ${w.name}`} width={142} height={54} sizes="142px"/>:<span className="winery-name-fallback">{w.name}</span>}</article>):<p className="public-empty-message">Las bodegas destacadas se administran desde el CRM.</p>}</div></div></section>
 
     <section id="vinos" className="featured-wines-section"><div className="featured-section-title"><span/><h2>Vinos destacados</h2><span/></div>{catalogLoading?<p className="catalog-state">Cargando catálogo...</p>:<div className="featured-wines-grid">{featuredWines.map(w=><ProductCard key={w.id} wine={w}/>)}</div>}{catalogError&&<p className="catalog-warning">Se mostró un catálogo de respaldo porque Supabase respondió: {catalogError}</p>}</section>
 
@@ -730,7 +736,7 @@ export default function Home() {
       <section className="product-detail-modal" onMouseDown={event=>event.stopPropagation()}>
         <button type="button" className="product-detail-close" onClick={()=>setSelectedProduct(null)} aria-label="Cerrar detalle"><X/></button>
         <div className="product-detail-image">
-          {selectedProduct.image?<img src={selectedProduct.image} alt={selectedProduct.name}/>:<div className="image-empty-state"><Package size={48}/><span>Sin imagen</span></div>}
+          {selectedProduct.image?<Image src={selectedProduct.image} alt={selectedProduct.name} fill sizes="(max-width: 700px) 92vw, 44vw" priority/>:<div className="image-empty-state"><Package size={48}/><span>Sin imagen</span></div>}
         </div>
         <div className="product-detail-copy">
           <span className="product-detail-eyebrow">{selectedProduct.varietal||'Selección Dolce Vino'}</span>
@@ -757,6 +763,6 @@ export default function Home() {
     </div>}
 
     <div className={cartOpen?'cart-overlay is-open':'cart-overlay'} onClick={()=>setCartOpen(false)}/>
-    <aside className={cartOpen?'cart-drawer is-open':'cart-drawer'}><div className="cart-head"><div><span>Dolce Vino</span><h2>Tu pedido</h2></div><button onClick={()=>setCartOpen(false)}><X/></button></div><div className="cart-items">{!cart.length&&<p className="empty-cart">Todavía no agregaste cajas.</p>}{cart.map(i=>{const isEstuche=isEstucheProduct(i.name,i.detail);const lineTotal=(isEstuche?i.pricePerUnit:i.pricePerUnit*i.unitsPerBox)*i.boxes;return <article className="cart-item" key={i.id}>{i.image?<img src={i.image} alt={i.name}/>:<div className="cart-image-empty"><Package size={20}/></div>}<div><h3>{i.name}</h3><p>{isEstuche?'1 estuche por unidad':`${i.unitsPerBox} botellas por caja`}</p><strong>{formatPrice(lineTotal)}</strong></div><div className="cart-qty"><button onClick={()=>changeBoxes(i.id,-1)}><Minus size={14}/></button><span>{i.boxes}</span><button onClick={()=>changeBoxes(i.id,1)}><Plus size={14}/></button></div></article>})}</div><div className="cart-footer"><div><span>Total estimado</span><strong>{formatPrice(cartTotal)}</strong></div><button disabled={!cart.length}>Solicitar pedido</button></div></aside>
+    <aside className={cartOpen?'cart-drawer is-open':'cart-drawer'}><div className="cart-head"><div><span>Dolce Vino</span><h2>Tu pedido</h2></div><button onClick={()=>setCartOpen(false)}><X/></button></div><div className="cart-items">{!cart.length&&<p className="empty-cart">Todavía no agregaste cajas.</p>}{cart.map(i=>{const isEstuche=isEstucheProduct(i.name,i.detail);const lineTotal=(isEstuche?i.pricePerUnit:i.pricePerUnit*i.unitsPerBox)*i.boxes;return <article className="cart-item" key={i.id}>{i.image?<Image src={i.image} alt={i.name} width={68} height={92} sizes="68px"/>:<div className="cart-image-empty"><Package size={20}/></div>}<div><h3>{i.name}</h3><p>{isEstuche?'1 estuche por unidad':`${i.unitsPerBox} botellas por caja`}</p><strong>{formatPrice(lineTotal)}</strong></div><div className="cart-qty"><button onClick={()=>changeBoxes(i.id,-1)}><Minus size={14}/></button><span>{i.boxes}</span><button onClick={()=>changeBoxes(i.id,1)}><Plus size={14}/></button></div></article>})}</div><div className="cart-footer"><div><span>Total estimado</span><strong>{formatPrice(cartTotal)}</strong></div><button disabled={!cart.length}>Solicitar pedido</button></div></aside>
   </main>;
 }

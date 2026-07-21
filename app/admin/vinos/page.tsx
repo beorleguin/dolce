@@ -554,12 +554,26 @@ export default function WinesAdminPage() {
     const cropWidth = Math.min(width - cropX, maxX - minX + 1 + margin * 2);
     const cropHeight = Math.min(height - cropY, maxY - minY + 1 + margin * 2);
 
+    // Reducimos la imagen antes de subirla. Para las tarjetas y el modal no
+    // necesitamos conservar archivos de varios miles de píxeles.
+    const MAX_OUTPUT_WIDTH = 1000;
+    const MAX_OUTPUT_HEIGHT = 1400;
+    const outputScale = Math.min(
+      1,
+      MAX_OUTPUT_WIDTH / Math.max(1, cropWidth),
+      MAX_OUTPUT_HEIGHT / Math.max(1, cropHeight),
+    );
+    const outputWidth = Math.max(1, Math.round(cropWidth * outputScale));
+    const outputHeight = Math.max(1, Math.round(cropHeight * outputScale));
+
     const outputCanvas = document.createElement('canvas');
-    outputCanvas.width = Math.max(1, cropWidth);
-    outputCanvas.height = Math.max(1, cropHeight);
+    outputCanvas.width = outputWidth;
+    outputCanvas.height = outputHeight;
     const outputContext = outputCanvas.getContext('2d');
     if (!outputContext) throw new Error('No se pudo generar la imagen final.');
 
+    outputContext.imageSmoothingEnabled = true;
+    outputContext.imageSmoothingQuality = 'high';
     outputContext.drawImage(
       canvas,
       cropX,
@@ -568,21 +582,21 @@ export default function WinesAdminPage() {
       cropHeight,
       0,
       0,
-      cropWidth,
-      cropHeight,
+      outputWidth,
+      outputHeight,
     );
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       outputCanvas.toBlob(
         (result) => (result ? resolve(result) : reject(new Error('No se pudo convertir la imagen.'))),
-        'image/png',
-        0.95,
+        'image/webp',
+        0.84,
       );
     });
 
     const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-_]+/g, '-');
-    return new File([blob], `${baseName || 'producto'}-sin-fondo.png`, {
-      type: 'image/png',
+    return new File([blob], `${baseName || 'producto'}-optimizada.webp`, {
+      type: 'image/webp',
       lastModified: Date.now(),
     });
   }
@@ -603,13 +617,13 @@ export default function WinesAdminPage() {
       const previousPath = draft.image_path || null;
       const path = `manual/${draft.id || 'nuevo'}/${Date.now()}-${Math.random()
         .toString(36)
-        .slice(2)}.png`;
+        .slice(2)}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
         .upload(path, processedFile, {
           upsert: false,
-          contentType: 'image/png',
+          contentType: 'image/webp',
           cacheControl: '31536000',
         });
       if (uploadError) throw uploadError;

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   ChevronDown,
@@ -136,6 +137,7 @@ export default function CatalogListingPage({
   const [cartOpen, setCartOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState('');
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(24);
 
   useEffect(() => {
     setCart(getCartFromStorage());
@@ -343,6 +345,12 @@ export default function CatalogListingPage({
         ? 'Explorá nuestra selección de espumantes y encontrá la etiqueta indicada para cada celebración.'
         : 'Explorá nuestra selección, filtrá por bodega o varietal y encontrá la etiqueta indicada para cada ocasión.';
 
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [mode, slug, query, selectedWinery, selectedVarietal]);
+
+  const visibleProducts = filtered.slice(0, visibleCount);
+
   const addBox = (product: Product) => {
     const next = cart.some((item) => item.id === product.id)
       ? cart.map((item) =>
@@ -382,7 +390,7 @@ export default function CatalogListingPage({
       <header className={`site-header${headerCompact ? ' is-compact' : ''}`}>
         <div className="header-shell">
           <Link href="/" className="brand" aria-label="Dolce Vino - Inicio">
-            <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
+            <Image src="/assets/logo_dolce_vino.png" alt="Dolce Vino" width={108} height={108} priority />
           </Link>
 
           <nav className={menuOpen ? 'main-nav is-open' : 'main-nav'}>
@@ -660,7 +668,7 @@ export default function CatalogListingPage({
         </p>
 
         <div className="wine-listing-grid">
-          {filtered.map((product) => (
+          {visibleProducts.map((product, index) => (
             <article className="catalog-product-card" key={product.id}>
               <div className="box-badge">
                 <Package size={15} />
@@ -677,7 +685,13 @@ export default function CatalogListingPage({
                 onClick={() => setSelected(product)}
               >
                 {product.image ? (
-                  <img src={product.image} alt={product.name} />
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 700px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                    priority={index < 4}
+                  />
                 ) : (
                   <div className="image-empty-state">
                     <Package />
@@ -722,6 +736,18 @@ export default function CatalogListingPage({
             </article>
           ))}
         </div>
+
+        {visibleProducts.length < filtered.length && (
+          <div className="catalog-load-more-wrap">
+            <button
+              type="button"
+              className="catalog-load-more"
+              onClick={() => setVisibleCount((current) => current + 24)}
+            >
+              Ver más productos
+            </button>
+          </div>
+        )}
 
         {!loading && !filtered.length && (
           <div className="catalog-empty-results">
@@ -768,7 +794,13 @@ export default function CatalogListingPage({
             return (
               <article className="cart-item" key={item.id}>
                 {item.image ? (
-                  <img src={item.image} alt={item.name} />
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    width={68}
+                    height={92}
+                    sizes="68px"
+                  />
                 ) : (
                   <div className="cart-image-empty">
                     <Package size={20} />
@@ -826,7 +858,13 @@ export default function CatalogListingPage({
 
             <div className="product-detail-image">
               {selected.image ? (
-                <img src={selected.image} alt={selected.name} />
+                <Image
+                  src={selected.image}
+                  alt={selected.name}
+                  fill
+                  sizes="(max-width: 700px) 92vw, 44vw"
+                  priority
+                />
               ) : (
                 <div className="image-empty-state">
                   <Package size={48} />
