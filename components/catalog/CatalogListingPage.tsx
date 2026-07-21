@@ -301,17 +301,26 @@ export default function CatalogListingPage({
   const filtered = useMemo(() => {
     const search = normalizeCatalogText(query);
 
-    return baseProducts.filter((product) => {
-      const haystack = normalizeCatalogText(
-        `${product.name} ${product.winery} ${product.varietal}`,
-      );
+    return baseProducts
+      .filter((product) => {
+        const haystack = normalizeCatalogText(
+          `${product.name} ${product.winery} ${product.varietal}`,
+        );
 
-      return (
-        (!search || haystack.includes(search)) &&
-        (!selectedWinery || product.winery === selectedWinery) &&
-        (!selectedVarietal || product.varietal === selectedVarietal)
-      );
-    });
+        return (
+          (!search || haystack.includes(search)) &&
+          (!selectedWinery || product.winery === selectedWinery) &&
+          (!selectedVarietal || product.varietal === selectedVarietal)
+        );
+      })
+      .sort((a, b) => {
+        const aHasImage = Boolean(a.image?.trim());
+        const bHasImage = Boolean(b.image?.trim());
+
+        if (aHasImage !== bHasImage) return aHasImage ? -1 : 1;
+
+        return a.name.localeCompare(b.name, 'es');
+      });
   }, [
     baseProducts,
     query,

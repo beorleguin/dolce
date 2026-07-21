@@ -298,8 +298,17 @@ export default function Home() {
 
   const wineCatalog=useMemo(()=>wines.filter(isWineProduct),[wines]);
   const featuredWines=useMemo(()=>{
-    const selected=wineCatalog.filter(w=>w.featured).sort((a,b)=>a.order-b.order);
-    return (selected.length?selected:wineCatalog).slice(0,5);
+    const source=wineCatalog.filter(w=>w.featured);
+    const selected=(source.length?source:wineCatalog).sort((a,b)=>{
+      const aHasImage=Boolean(a.image?.trim());
+      const bHasImage=Boolean(b.image?.trim());
+
+      if(aHasImage!==bHasImage) return aHasImage?-1:1;
+
+      return a.order-b.order;
+    });
+
+    return selected.slice(0,5);
   },[wineCatalog]);
   const wineryNames=useMemo(()=>Array.from(new Set(
     wineCatalog
@@ -330,6 +339,13 @@ export default function Home() {
         return termMatch;
       }
       return true;
+    }).sort((a,b)=>{
+      const aHasImage=Boolean(a.image?.trim());
+      const bHasImage=Boolean(b.image?.trim());
+
+      if(aHasImage!==bHasImage) return aHasImage?-1:1;
+
+      return a.name.localeCompare(b.name,'es');
     });
   },[modal,wines]);
 
@@ -337,11 +353,21 @@ export default function Home() {
   const filteredWineCatalog=useMemo(()=>{
     const query=normalizeLabel(catalogQuery);
     const selectedVarietal=normalizeLabel(catalogVarietal);
-    return wineCatalog.filter(wine=>{
-      const matchesVarietal=!selectedVarietal||normalizeLabel(wine.varietal)===selectedVarietal;
-      const haystack=normalizeLabel(`${wine.name} ${wine.brand} ${wine.winery} ${wine.varietal}`);
-      return matchesVarietal&&(!query||haystack.includes(query));
-    });
+
+    return wineCatalog
+      .filter(wine=>{
+        const matchesVarietal=!selectedVarietal||normalizeLabel(wine.varietal)===selectedVarietal;
+        const haystack=normalizeLabel(`${wine.name} ${wine.brand} ${wine.winery} ${wine.varietal}`);
+        return matchesVarietal&&(!query||haystack.includes(query));
+      })
+      .sort((a,b)=>{
+        const aHasImage=Boolean(a.image?.trim());
+        const bHasImage=Boolean(b.image?.trim());
+
+        if(aHasImage!==bHasImage) return aHasImage?-1:1;
+
+        return a.name.localeCompare(b.name,'es');
+      });
   },[wineCatalog,catalogQuery,catalogVarietal]);
 
   useEffect(()=>{setVisibleWineCount(10)},[catalogQuery,catalogVarietal]);
