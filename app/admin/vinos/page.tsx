@@ -566,12 +566,28 @@ export default function WinesAdminPage() {
     const outputWidth = Math.max(1, Math.round(cropWidth * outputScale));
     const outputHeight = Math.max(1, Math.round(cropHeight * outputScale));
 
+    // Todas las imágenes se guardan en una caja visual idéntica. De esta forma,
+    // una botella originalmente pequeña no queda más chica en las tarjetas.
+    const OUTPUT_WIDTH = 700;
+    const OUTPUT_HEIGHT = 900;
+    const SAFE_WIDTH = 590;
+    const SAFE_HEIGHT = 790;
+    const normalizedScale = Math.min(
+      SAFE_WIDTH / Math.max(1, cropWidth),
+      SAFE_HEIGHT / Math.max(1, cropHeight),
+    );
+    const normalizedWidth = Math.max(1, Math.round(cropWidth * normalizedScale));
+    const normalizedHeight = Math.max(1, Math.round(cropHeight * normalizedScale));
+    const destinationX = Math.round((OUTPUT_WIDTH - normalizedWidth) / 2);
+    const destinationY = Math.round((OUTPUT_HEIGHT - normalizedHeight) / 2);
+
     const outputCanvas = document.createElement('canvas');
-    outputCanvas.width = outputWidth;
-    outputCanvas.height = outputHeight;
+    outputCanvas.width = OUTPUT_WIDTH;
+    outputCanvas.height = OUTPUT_HEIGHT;
     const outputContext = outputCanvas.getContext('2d');
     if (!outputContext) throw new Error('No se pudo generar la imagen final.');
 
+    outputContext.clearRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
     outputContext.imageSmoothingEnabled = true;
     outputContext.imageSmoothingQuality = 'high';
     outputContext.drawImage(
@@ -580,10 +596,10 @@ export default function WinesAdminPage() {
       cropY,
       cropWidth,
       cropHeight,
-      0,
-      0,
-      outputWidth,
-      outputHeight,
+      destinationX,
+      destinationY,
+      normalizedWidth,
+      normalizedHeight,
     );
 
     const blob = await new Promise<Blob>((resolve, reject) => {

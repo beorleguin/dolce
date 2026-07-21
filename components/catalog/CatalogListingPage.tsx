@@ -52,6 +52,21 @@ type Product = {
   unitsPerBox: number;
 };
 
+const hasProductImage=(product:{image?:string|null})=>
+  Boolean(product.image?.trim());
+
+const sortProductsImageFirst=<T extends {image?:string|null;name:string}>(
+  products:T[],
+)=>{
+  return [...products].sort((a,b)=>{
+    const imageDifference=Number(hasProductImage(b))-Number(hasProductImage(a));
+
+    if(imageDifference!==0) return imageDifference;
+
+    return a.name.localeCompare(b.name,'es');
+  });
+};
+
 type CatalogListingPageProps = {
   mode: CatalogMode;
   slug?: string;
@@ -145,28 +160,10 @@ export default function CatalogListingPage({
     const supabase = createClient();
 
     void (async () => {
-      const rows: any[] = [];
+      const productSelect =
+        'id,name,article_name,description,price,units_per_box,image_url,enabled,categories(name),wineries(name,slug),varietals(name)';
 
-      for (let from = 0; ; from += 700) {
-        const { data, error } = await supabase
-          .from('products')
-          .select(
-            'id,name,article_name,description,price,units_per_box,image_url,enabled,categories(name),wineries(name,slug),varietals(name)',
-          )
-          .eq('enabled', true)
-          .order('name')
-          .range(from, from + 699);
-
-        if (error) {
-          console.error(error);
-          break;
-        }
-
-        rows.push(...(data || []));
-        if ((data || []).length < 700) break;
-      }
-
-      setProducts(
+      const mapProducts = (rows: any[]): Product[] =>
         rows.map((row) => {
           const wineryName = cleanPublicWineryName(row.wineries?.name || '');
           return {
@@ -182,10 +179,52 @@ export default function CatalogListingPage({
             pricePerUnit: Number(row.price) || 0,
             unitsPerBox: Math.max(1, Number(row.units_per_box) || 6),
           };
-        }),
-      );
+        });
+
+      // Primer render rápido: traer solamente 24 productos con imagen.
+      const { data: initialRows, error: initialError } = await supabase
+        .from('products')
+        .select(productSelect)
+        .eq('enabled', true)
+        .not('image_url', 'is', null)
+        .neq('image_url', '')
+        .order('name', { ascending: true })
+        .limit(24);
+
+      if (initialError) {
+        console.error(initialError);
+      } else {
+        setProducts(sortProductsImageFirst(mapProducts(initialRows || [])));
+      }
 
       setLoading(false);
+
+      // Completar todos los productos en segundo plano para conservar filtros,
+      // búsquedas y páginas por bodega/varietal sin bloquear la carga inicial.
+      try {
+        const rows: any[] = [];
+        const pageSize = 500;
+
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await supabase
+            .from('products')
+            .select(productSelect)
+            .eq('enabled', true)
+            .order('name', { ascending: true })
+            .range(from, from + pageSize - 1);
+
+          if (error) throw error;
+
+          const batch = data || [];
+          rows.push(...batch);
+
+          if (batch.length < pageSize) break;
+        }
+
+        setProducts(sortProductsImageFirst(mapProducts(rows)));
+      } catch (error) {
+        console.error('No se pudo completar el catálogo en segundo plano:', error);
+      }
     })();
   }, []);
 
@@ -301,26 +340,19 @@ export default function CatalogListingPage({
   const filtered = useMemo(() => {
     const search = normalizeCatalogText(query);
 
-    return baseProducts
-      .filter((product) => {
-        const haystack = normalizeCatalogText(
-          `${product.name} ${product.winery} ${product.varietal}`,
-        );
+    const results=baseProducts.filter((product) => {
+      const haystack = normalizeCatalogText(
+        `${product.name} ${product.winery} ${product.varietal}`,
+      );
 
-        return (
-          (!search || haystack.includes(search)) &&
-          (!selectedWinery || product.winery === selectedWinery) &&
-          (!selectedVarietal || product.varietal === selectedVarietal)
-        );
-      })
-      .sort((a, b) => {
-        const aHasImage = Boolean(a.image?.trim());
-        const bHasImage = Boolean(b.image?.trim());
+      return (
+        (!search || haystack.includes(search)) &&
+        (!selectedWinery || product.winery === selectedWinery) &&
+        (!selectedVarietal || product.varietal === selectedVarietal)
+      );
+    });
 
-        if (aHasImage !== bHasImage) return aHasImage ? -1 : 1;
-
-        return a.name.localeCompare(b.name, 'es');
-      });
+    return sortProductsImageFirst(results);
   }, [
     baseProducts,
     query,

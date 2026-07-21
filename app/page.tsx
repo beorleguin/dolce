@@ -65,6 +65,25 @@ const inferUnitsPerBox=(...values:Array<string|undefined|null>)=>{
   return 6;
 };
 
+const hasProductImage=(item:{image?:string|null})=>Boolean(item.image?.trim());
+
+const sortProductsImageFirst=<T extends {image?:string|null;name:string}>(
+  items:T[],
+  secondary?:(a:T,b:T)=>number,
+)=>{
+  return [...items].sort((a,b)=>{
+    const imageDifference=Number(hasProductImage(b))-Number(hasProductImage(a));
+    if(imageDifference!==0) return imageDifference;
+
+    if(secondary){
+      const secondaryResult=secondary(a,b);
+      if(secondaryResult!==0) return secondaryResult;
+    }
+
+    return a.name.localeCompare(b.name,'es');
+  });
+};
+
 const shuffleProducts=<T,>(items:T[])=>{
   const copy=[...items];
   for(let index=copy.length-1;index>0;index--){
@@ -165,39 +184,42 @@ export default function Home() {
       setCatalogLoading(true);
       setCatalogError('');
       try{
-        const rows:any[]=[];
-        const pageSize=750;
-        for(let from=0;;from+=pageSize){
-          const {data,error}=await supabase
+        const productSelect='id,name,article_name,description,price,units_per_box,image_url,featured,featured_order,enabled,source_category,categories(name),brands(name),wineries(name),varietals(name)';
+
+        const [initialProductsResult,wineryResult,bannerResult]=await Promise.all([
+          supabase
             .from('products')
-            .select('id,name,article_name,description,price,units_per_box,image_url,featured,featured_order,enabled,source_category,categories(name),brands(name),wineries(name),varietals(name)')
+            .select(productSelect)
             .eq('enabled',true)
+            .not('image_url','is',null)
+            .neq('image_url','')
+            .order('featured',{ascending:false})
+            .order('featured_order',{ascending:true})
             .order('name',{ascending:true})
-            .range(from,from+pageSize-1);
-          if(error) throw error;
-          const batch=data||[];
-          rows.push(...batch);
-          if(batch.length<pageSize) break;
-        }
+            .limit(24),
+          supabase
+            .from('wineries')
+            .select('name,logo_url,featured,enabled,sort_order')
+            .eq('enabled',true)
+            .eq('featured',true)
+            .order('sort_order',{ascending:true})
+            .limit(6),
+          supabase
+            .from('site_banners')
+            .select('id,type,title,subtitle,desktop_image_url,mobile_image_url,enabled,sort_order,updated_at')
+            .eq('enabled',true)
+            .in('type',['hero','middle'])
+            .order('sort_order',{ascending:true}),
+        ]);
 
-        const {data:wineryRows,error:wineryError}=await supabase
-          .from('wineries')
-          .select('name,logo_url,featured,enabled,sort_order')
-          .eq('enabled',true)
-          .eq('featured',true)
-          .order('sort_order',{ascending:true})
-          .limit(6);
-        if(wineryError) throw wineryError;
+        if(initialProductsResult.error) throw initialProductsResult.error;
+        if(wineryResult.error) throw wineryResult.error;
+        if(bannerResult.error) throw bannerResult.error;
 
-        const {data:bannerRows,error:bannerError}=await supabase
-          .from('site_banners')
-          .select('id,type,title,subtitle,desktop_image_url,mobile_image_url,enabled,sort_order,updated_at')
-          .eq('enabled',true)
-          .in('type',['hero','middle'])
-          .order('sort_order',{ascending:true});
-        if(bannerError) throw bannerError;
+        const wineryRows=wineryResult.data||[];
+        const bannerRows=bannerResult.data||[];
 
-        const mapped:PublicProduct[]=rows.map((row:any,index)=>({
+        const mapProducts=(rows:any[]):PublicProduct[]=>rows.map((row:any,index)=>({
           id:row.id,
           name:(row.article_name||row.name||'Producto sin nombre').trim(),
           detail:row.article_name&&row.article_name!==row.name?row.name:undefined,
@@ -214,8 +236,11 @@ export default function Home() {
           description:(row.description||'').trim(),
         }));
 
+        const initialMapped=mapProducts(initialProductsResult.data||[]);
+
         if(!cancelled){
-          setWines(shuffleProducts(mapped));
+          setWines(sortProductsImageFirst(initialMapped));
+          setCatalogLoading(false);
           setFeaturedWineries((wineryRows||[])
             .filter((w:any)=>!hiddenPublicWineries.includes(normalizeLabel(w.name||'')))
             .map((w:any)=>({name:cleanWineryName(w.name),image:w.logo_url||''})));
@@ -251,6 +276,37 @@ export default function Home() {
               : null,
           );
         }
+
+        // Cargar el resto del catálogo en segundo plano después de mostrar
+        // inmediatamente los primeros productos con imagen.
+        void (async()=>{
+          try{
+            const rows:any[]=[];
+            const pageSize=500;
+
+            for(let from=0;;from+=pageSize){
+              const {data,error}=await supabase
+                .from('products')
+                .select(productSelect)
+                .eq('enabled',true)
+                .order('name',{ascending:true})
+                .range(from,from+pageSize-1);
+
+              if(error) throw error;
+
+              const batch=data||[];
+              rows.push(...batch);
+
+              if(batch.length<pageSize) break;
+            }
+
+            if(!cancelled){
+              setWines(sortProductsImageFirst(mapProducts(rows)));
+            }
+          }catch(backgroundError){
+            console.error('No se pudo completar el catálogo en segundo plano:',backgroundError);
+          }
+        })();
       }catch(error:any){
         console.error('No se pudo cargar el catálogo público:',error);
         if(!cancelled){
@@ -298,17 +354,13 @@ export default function Home() {
 
   const wineCatalog=useMemo(()=>wines.filter(isWineProduct),[wines]);
   const featuredWines=useMemo(()=>{
-    const source=wineCatalog.filter(w=>w.featured);
-    const selected=(source.length?source:wineCatalog).sort((a,b)=>{
-      const aHasImage=Boolean(a.image?.trim());
-      const bHasImage=Boolean(b.image?.trim());
+    const featured=wineCatalog.filter(w=>w.featured);
+    const source=featured.length?featured:wineCatalog;
 
-      if(aHasImage!==bHasImage) return aHasImage?-1:1;
-
-      return a.order-b.order;
-    });
-
-    return selected.slice(0,5);
+    return sortProductsImageFirst(
+      source,
+      (a,b)=>a.order-b.order,
+    ).slice(0,5);
   },[wineCatalog]);
   const wineryNames=useMemo(()=>Array.from(new Set(
     wineCatalog
@@ -320,54 +372,55 @@ export default function Home() {
 
   const modalWines=useMemo(()=>{
     if(!modal) return [];
-    if(modal.type==='winery') return wineCatalog.filter(
-      w=>normalizeLabel(cleanWineryName(w.winery))===normalizeLabel(modal.value)
-    );
-    const terms=modal.terms.map(normalizeLabel);
-    return wines.filter(w=>{
-      const haystack=`${normalizeLabel(w.varietal)} ${normalizeLabel(w.name)} ${normalizeLabel(w.category)} ${normalizeLabel(w.sourceCategory)}`;
-      const termMatch=terms.some(term=>haystack.includes(term));
-      if(!termMatch) return false;
-      if(modal.eyebrow==='Vinos') return isWineProduct(w);
-      if(modal.eyebrow==='Espumantes') return /espumante|brut|nature|demi sec|pet nat|champenoise/.test(haystack);
-      if(modal.eyebrow==='Categoría'){
-        const databaseCategory=normalizeLabel(`${w.category} ${w.sourceCategory}`);
-        if(modal.value==='Destilados'){
-          return /destilado|whisky|whiskey|gin|vodka|ron|licor|aperitivo|vermut|vermouth|tequila|cognac|brandy|pisco/.test(databaseCategory)
-            || /destilado|whisky|whiskey|gin|vodka|ron|licor|aperitivo|vermut|vermouth|tequila|cognac|brandy|pisco/.test(haystack);
+
+    let results:PublicProduct[]=[];
+
+    if(modal.type==='winery'){
+      results=wineCatalog.filter(
+        w=>normalizeLabel(cleanWineryName(w.winery))===normalizeLabel(modal.value)
+      );
+    }else{
+      const terms=modal.terms.map(normalizeLabel);
+
+      results=wines.filter(w=>{
+        const haystack=`${normalizeLabel(w.varietal)} ${normalizeLabel(w.name)} ${normalizeLabel(w.category)} ${normalizeLabel(w.sourceCategory)}`;
+        const termMatch=terms.some(term=>haystack.includes(term));
+
+        if(!termMatch) return false;
+        if(modal.eyebrow==='Vinos') return isWineProduct(w);
+        if(modal.eyebrow==='Espumantes') return /espumante|brut|nature|demi sec|pet nat|champenoise/.test(haystack);
+
+        if(modal.eyebrow==='Categoría'){
+          const databaseCategory=normalizeLabel(`${w.category} ${w.sourceCategory}`);
+
+          if(modal.value==='Destilados'){
+            return /destilado|whisky|whiskey|gin|vodka|ron|licor|aperitivo|vermut|vermouth|tequila|cognac|brandy|pisco/.test(databaseCategory)
+              || /destilado|whisky|whiskey|gin|vodka|ron|licor|aperitivo|vermut|vermouth|tequila|cognac|brandy|pisco/.test(haystack);
+          }
+
+          return termMatch;
         }
-        return termMatch;
-      }
-      return true;
-    }).sort((a,b)=>{
-      const aHasImage=Boolean(a.image?.trim());
-      const bHasImage=Boolean(b.image?.trim());
 
-      if(aHasImage!==bHasImage) return aHasImage?-1:1;
+        return true;
+      });
+    }
 
-      return a.name.localeCompare(b.name,'es');
-    });
-  },[modal,wines]);
+    return sortProductsImageFirst(results);
+  },[modal,wines,wineCatalog]);
 
   const catalogVarietals=useMemo(()=>Array.from(new Set(wineCatalog.map(w=>w.varietal).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'es')),[wineCatalog]);
   const filteredWineCatalog=useMemo(()=>{
     const query=normalizeLabel(catalogQuery);
     const selectedVarietal=normalizeLabel(catalogVarietal);
 
-    return wineCatalog
-      .filter(wine=>{
-        const matchesVarietal=!selectedVarietal||normalizeLabel(wine.varietal)===selectedVarietal;
-        const haystack=normalizeLabel(`${wine.name} ${wine.brand} ${wine.winery} ${wine.varietal}`);
-        return matchesVarietal&&(!query||haystack.includes(query));
-      })
-      .sort((a,b)=>{
-        const aHasImage=Boolean(a.image?.trim());
-        const bHasImage=Boolean(b.image?.trim());
+    const results=wineCatalog.filter(wine=>{
+      const matchesVarietal=!selectedVarietal||normalizeLabel(wine.varietal)===selectedVarietal;
+      const haystack=normalizeLabel(`${wine.name} ${wine.brand} ${wine.winery} ${wine.varietal}`);
 
-        if(aHasImage!==bHasImage) return aHasImage?-1:1;
+      return matchesVarietal&&(!query||haystack.includes(query));
+    });
 
-        return a.name.localeCompare(b.name,'es');
-      });
+    return sortProductsImageFirst(results);
   },[wineCatalog,catalogQuery,catalogVarietal]);
 
   useEffect(()=>{setVisibleWineCount(10)},[catalogQuery,catalogVarietal]);

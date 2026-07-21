@@ -3809,3 +3809,26 @@ img{max-width:100%}
   .product-detail-image>img{padding:20px!important}
   .catalog-load-more-wrap{width:calc(100% - 24px);margin-top:20px}
 }
+
+
+/* ===== Tamaño visual uniforme y apertura rápida del modal ===== */
+.catalog-product-image,
+.featured-bottle,
+.product-detail-image{
+  position:relative!important;
+  overflow:hidden!important;
+}
+
+.catalog-product-image>img,
+.featured-bottle>img,
+.product-detail-image>img{
+  padding:0!important;
+  filter:drop-shadow(0 12px 9px rgba(0,0,0,.18))!important;
+  will-change:transform!important;
+}
+
+/* La tarjeta y el modal solicitan la misma variante optimizada de 640 px.
+   Al abrir el detalle, la imagen ya está en la caché del navegador. */
+.product-detail-image{
+  isolation:isolate;
+}
