@@ -134,6 +134,7 @@ export default function Home() {
   const [headerCompact,setHeaderCompact] = useState(false);
   const [headerSearchOpen,setHeaderSearchOpen] = useState(false);
   const [catalogPdfUrl,setCatalogPdfUrl] = useState('/catalogo.pdf');
+  const [catalogGenerating,setCatalogGenerating] = useState(false);
   const [heroBanners,setHeroBanners] = useState<typeof fallbackHeroSlides>([]);
   const [middleBanner,setMiddleBanner] = useState<PublicBanner|null>(null);
 
@@ -379,6 +380,94 @@ export default function Home() {
     </article>;
   };
 
+  const scrollToCatalog=(event?:React.MouseEvent<HTMLAnchorElement>)=>{
+    event?.preventDefault();
+
+    setMenuOpen(false);
+    setMobileDropdown('');
+
+    const target=document.getElementById('catalogo');
+    if(!target) return;
+
+    const header=document.querySelector('.site-header') as HTMLElement|null;
+    const headerHeight=header?.offsetHeight||0;
+    const extraSpace=window.innerWidth<=700?34:56;
+    const targetY=Math.max(
+      0,
+      target.getBoundingClientRect().top+
+      window.scrollY-
+      headerHeight-
+      extraSpace,
+    );
+
+    const startY=window.scrollY;
+    const distance=targetY-startY;
+    const duration=1100;
+    const startTime=performance.now();
+
+    const easeInOutCubic=(progress:number)=>
+      progress<0.5
+        ? 4*progress*progress*progress
+        : 1-Math.pow(-2*progress+2,3)/2;
+
+    const animate=(currentTime:number)=>{
+      const elapsed=currentTime-startTime;
+      const progress=Math.min(elapsed/duration,1);
+      window.scrollTo(0,startY+distance*easeInOutCubic(progress));
+
+      if(progress<1) requestAnimationFrame(animate);
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  const generateAndOpenCatalog=async()=>{
+    if(catalogGenerating) return;
+
+    setCatalogGenerating(true);
+
+    // Abrimos una única pestaña de forma síncrona para evitar el bloqueo
+    // de popups. Nunca reemplazamos la pestaña actual del sitio.
+    const catalogWindow=window.open('about:blank','dolce-vino-catalogo');
+
+    if(!catalogWindow){
+      setCatalogGenerating(false);
+      alert('El navegador bloqueó la apertura del catálogo. Habilitá las ventanas emergentes para este sitio.');
+      return;
+    }
+
+    catalogWindow.document.title='Generando catálogo Dolce Vino';
+    catalogWindow.document.body.style.cssText='margin:0;display:grid;place-items:center;min-height:100vh;background:#10110e;color:#f4f5ef;font-family:Arial,sans-serif;';
+    catalogWindow.document.body.innerHTML='<div style="text-align:center"><strong style="display:block;font-size:22px;margin-bottom:10px">Generando catálogo actualizado…</strong><span style="color:#aeb3a8">Esto puede tardar unos segundos.</span></div>';
+
+    try{
+      const response=await fetch(`/api/catalog/generate?t=${Date.now()}`,{
+        method:'POST',
+        cache:'no-store',
+        headers:{'Cache-Control':'no-cache'},
+      });
+
+      const payload=await response.json();
+
+      if(!response.ok||!payload?.url){
+        throw new Error(payload?.error||'No se pudo generar el catálogo.');
+      }
+
+      const freshUrl=`${payload.url}${payload.url.includes('?')?'&':'?'}v=${Date.now()}`;
+      setCatalogPdfUrl(freshUrl);
+
+      // La misma pestaña de espera carga el PDF generado.
+      catalogWindow.location.href=freshUrl;
+    }catch(error){
+      console.error('No se pudo regenerar el catálogo:',error);
+
+      catalogWindow.document.body.innerHTML='<div style="max-width:560px;padding:32px;text-align:center"><strong style="display:block;font-size:22px;margin-bottom:12px">No se pudo generar el catálogo</strong><span style="display:block;color:#aeb3a8;margin-bottom:22px">Volvé a intentarlo en unos segundos.</span><button id="closeCatalogTab" style="min-height:42px;padding:0 20px;border:1px solid #c6d315;background:#c6d315;color:#101209;font-weight:700;cursor:pointer">Cerrar</button></div>';
+      catalogWindow.document.getElementById('closeCatalogTab')?.addEventListener('click',()=>catalogWindow.close());
+    }finally{
+      setCatalogGenerating(false);
+    }
+  };
+
   return <main className="home-page">
     <header className={`site-header${headerCompact?' is-compact':''}`}><div className="header-shell">
       <Link href="/" className="brand" aria-label="Dolce Vino - Inicio">
@@ -424,7 +513,13 @@ export default function Home() {
         <button className="icon-action search-trigger" aria-label="Buscar" onClick={()=>setHeaderSearchOpen(value=>!value)}><Search size={19}/></button>
         <Link className="icon-action desktop-action" href="/admin" aria-label="Mi cuenta"><UserRound size={19}/></Link>
         <button className="icon-action cart-trigger" aria-label="Pedido" onClick={()=>setCartOpen(true)}><ShoppingBag size={19}/>{cartBoxes>0&&<span>{cartBoxes}</span>}</button>
-        <a className="catalog-button" href="#catalogo">Catálogo</a>
+        <a
+          className="catalog-button"
+          href="#catalogo"
+          onClick={scrollToCatalog}
+        >
+          Catálogo
+        </a>
         <button className="mobile-menu-button" aria-label="Abrir menú" onClick={()=>{setMenuOpen(v=>!v);if(menuOpen)setMobileDropdown('')}}>{menuOpen?<X/>:<Menu/>}</button>
       </div>
       {menuOpen&&<button className="mobile-nav-backdrop" aria-label="Cerrar menú" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}/>}
@@ -550,16 +645,23 @@ export default function Home() {
         <span>Selección Dolce Vino</span>
         <h2>{middleBanner?.title||'Vinos de alta gama para momentos únicos'}</h2>
         <p>{middleBanner?.subtitle||'Etiquetas seleccionadas de bodegas destacadas, reunidas en un catálogo pensado para descubrir, elegir y compartir.'}</p>
-        <a href={catalogPdfUrl} target="_blank" rel="noreferrer" download>Descargar catálogo actual</a>
+        <button
+          type="button"
+          onClick={generateAndOpenCatalog}
+          disabled={catalogGenerating}
+          aria-busy={catalogGenerating}
+        >
+          {catalogGenerating?'Generando catálogo…':'Descargar catálogo actual'}
+        </button>
       </div>}
       {middleBanner?.desktop_image_url&&!middleBanner.title&&!middleBanner.subtitle&&
-        <a
+        <button
+          type="button"
           className="premium-banner-full-link"
-          href={catalogPdfUrl}
-          target="_blank"
-          rel="noreferrer"
-          download
-          aria-label="Descargar catálogo actual"
+          onClick={generateAndOpenCatalog}
+          disabled={catalogGenerating}
+          aria-label={catalogGenerating?'Generando catálogo actualizado':'Generar y descargar catálogo actualizado'}
+          aria-busy={catalogGenerating}
         />
       }
     </section>

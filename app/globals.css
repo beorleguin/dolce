@@ -3750,3 +3750,31 @@ img{max-width:100%}
     aspect-ratio:1080 / 1500!important;
   }
 }
+
+
+/* ===== Generación del catálogo desde el banner público ===== */
+.premium-banner-copy button{
+  min-height:52px;
+  padding:0 26px;
+  border:1px solid #c6d315;
+  background:#c6d315;
+  color:#101209;
+  font:inherit;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+
+.premium-banner-copy button:disabled,
+.premium-banner-full-link:disabled{
+  cursor:wait;
+  opacity:.72;
+}
+
+.premium-banner-full-link{
+  appearance:none;
+  border:0;
+  background:transparent;
+}
