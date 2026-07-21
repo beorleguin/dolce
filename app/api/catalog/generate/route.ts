@@ -512,7 +512,7 @@ function addCategoryProducts(
     grouped.set(group, values);
   }
 
-  const groups = [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b, 'es'));
+  const groups = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b, 'es'));
   let page = addProductsPage(pdf, category, logo, regular, bold, updatedDate);
   let column = 0;
   let y = CONTENT_TOP;
