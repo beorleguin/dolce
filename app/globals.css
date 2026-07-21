@@ -3011,3 +3011,557 @@ img{max-width:100%}
   text-align:right;
   line-height:1.45;
 }
+
+
+/* ===== Banners administrados desde Supabase ===== */
+.hero-banner-picture{
+  position:absolute;
+  inset:0;
+  display:block;
+}
+
+.hero-banner-picture img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center;
+}
+
+.hero-slide:has(.hero-banner-picture){
+  background:none!important;
+}
+
+/* Los banners generados ya incluyen su propio texto. */
+.hero-slide:has(.hero-banner-picture) + .hero-shade{
+  background:transparent;
+}
+
+.premium-banner--uploaded{
+  background:none!important;
+}
+
+.premium-banner-picture{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  display:block;
+}
+
+.premium-banner-picture img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center;
+}
+
+.premium-banner--uploaded .premium-banner-shade{
+  display:none;
+}
+
+.premium-banner-full-link{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  cursor:pointer;
+}
+
+@media(max-width:700px){
+  .hero-banner-picture img,
+  .premium-banner-picture img{
+    object-position:center;
+  }
+
+  .premium-banner--uploaded{
+    min-height:520px!important;
+    height:520px!important;
+  }
+}
+
+
+/* ===== Correcciones mobile de navegación, banners y bodegas ===== */
+
+/* El logo pertenece al navbar y no invade visualmente el banner en mobile. */
+@media(max-width:1000px){
+  .site-header{
+    overflow:visible!important;
+  }
+
+  .site-header .brand{
+    width:58px!important;
+    height:58px!important;
+    margin:0!important;
+    transform:none!important;
+    align-self:center!important;
+  }
+
+  .site-header .brand img{
+    width:58px!important;
+    height:58px!important;
+    object-fit:contain!important;
+  }
+}
+
+/* Botón X dentro del panel lateral */
+.mobile-nav-close{
+  display:none;
+}
+
+.mobile-crm-link{
+  display:none!important;
+}
+
+@media(max-width:1000px){
+  .mobile-nav-close{
+    position:absolute;
+    top:16px;
+    right:16px;
+    z-index:4;
+    width:40px;
+    height:40px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(255,255,255,.2);
+    background:#121410;
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .main-nav{
+    padding-top:78px!important;
+  }
+
+  .mobile-crm-link{
+    min-height:48px!important;
+    margin-top:8px!important;
+    padding:0 12px!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    color:var(--brand)!important;
+    border:1px solid rgba(198,211,21,.35)!important;
+    background:#12150d!important;
+  }
+
+  /* Cada desplegable puede abrirse y cerrarse de forma independiente. */
+  .nav-dropdown{
+    display:block!important;
+    width:100%!important;
+  }
+
+  .nav-dropdown-trigger{
+    width:100%!important;
+    min-height:48px!important;
+    padding:0 12px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+  }
+
+  .nav-dropdown-panel,
+  .grouped-menu-panel,
+  .winery-panel,
+  .category-menu-panel{
+    position:static!important;
+    width:100%!important;
+    min-width:0!important;
+    grid-template-columns:1fr!important;
+    max-height:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    visibility:hidden!important;
+    opacity:1!important;
+    pointer-events:none!important;
+    transform:none!important;
+    border:0!important;
+    background:#11130f!important;
+    box-shadow:none!important;
+  }
+
+  .nav-dropdown-panel.is-mobile-open{
+    max-height:380px!important;
+    padding:6px!important;
+    overflow-y:auto!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+
+  /* Vinos se ve igual de ordenado que Espumantes */
+  .grouped-menu-panel a,
+  .grouped-menu-panel button,
+  .winery-panel button,
+  .category-menu-panel button{
+    width:100%!important;
+    min-height:40px!important;
+    padding:0 12px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    border:0!important;
+    border-bottom:1px solid rgba(255,255,255,.06)!important;
+    background:transparent!important;
+    color:#dfe1db!important;
+    font-size:10px!important;
+    font-weight:600!important;
+    letter-spacing:.03em!important;
+    text-align:left!important;
+    text-transform:none!important;
+  }
+
+  .grouped-menu-panel a:last-child,
+  .grouped-menu-panel button:last-child,
+  .winery-panel button:last-child,
+  .category-menu-panel button:last-child{
+    border-bottom:0!important;
+  }
+}
+
+/* Banner del medio: mostrar el diseño completo sin zoom ni recorte */
+.premium-banner--uploaded{
+  width:min(1320px,calc(100% - 48px))!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1920/820!important;
+  background:#080908!important;
+}
+
+.premium-banner--uploaded .premium-banner-picture{
+  position:absolute!important;
+  inset:0!important;
+}
+
+.premium-banner--uploaded .premium-banner-picture img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+
+@media(max-width:700px){
+  .premium-banner--uploaded{
+    width:calc(100% - 20px)!important;
+    height:auto!important;
+    min-height:0!important;
+    aspect-ratio:1080/1500!important;
+  }
+}
+
+/* Bodegas destacadas en carrusel horizontal mobile */
+@media(max-width:700px){
+  .prestige-inner{
+    overflow:hidden!important;
+  }
+
+  .winery-marks{
+    display:flex!important;
+    grid-template-columns:none!important;
+    gap:10px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    scroll-snap-type:x mandatory!important;
+    scrollbar-width:none!important;
+    padding:0 14px 14px!important;
+  }
+
+  .winery-marks::-webkit-scrollbar{
+    display:none!important;
+  }
+
+  .winery-mark{
+    flex:0 0 150px!important;
+    min-width:150px!important;
+    height:96px!important;
+    scroll-snap-align:start!important;
+    border:1px solid rgba(255,255,255,.07)!important;
+    background:rgba(10,11,10,.75)!important;
+  }
+
+  .winery-logo{
+    max-width:112px!important;
+    max-height:54px!important;
+  }
+}
+
+
+/* ===== Filtros personalizados del catálogo ===== */
+.wine-listing-toolbar{
+  overflow:visible!important;
+}
+
+.catalog-search-field{
+  min-width:0;
+}
+
+.catalog-filter-dropdown{
+  position:relative;
+  min-width:0;
+}
+
+.catalog-filter-trigger{
+  width:100%;
+  height:44px;
+  padding:0 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border:1px solid #d7d9d2;
+  background:#fff;
+  color:#252720;
+  font:inherit;
+  cursor:pointer;
+}
+
+.catalog-filter-trigger span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.catalog-filter-dropdown.is-open .catalog-filter-trigger{
+  border-color:#c6d315;
+  box-shadow:0 0 0 2px rgba(198,211,21,.12);
+}
+
+.catalog-filter-dropdown.is-open .catalog-filter-trigger svg{
+  transform:rotate(180deg);
+}
+
+.catalog-filter-menu{
+  position:absolute;
+  top:calc(100% + 5px);
+  left:0;
+  right:0;
+  z-index:120;
+  max-height:280px;
+  padding:6px;
+  overflow-y:auto;
+  border:1px solid #d6dad1;
+  background:#fff;
+  box-shadow:0 18px 42px rgba(0,0,0,.24);
+}
+
+.catalog-filter-menu button{
+  width:100%;
+  min-height:38px;
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  border:0;
+  border-bottom:1px solid #eceee9;
+  background:#fff;
+  color:#272b24;
+  font:inherit;
+  font-size:13px;
+  text-align:left;
+  cursor:pointer;
+}
+
+.catalog-filter-menu button:last-child{
+  border-bottom:0;
+}
+
+.catalog-filter-menu button:hover{
+  background:#f5f7e8;
+}
+
+.catalog-filter-menu button.is-selected{
+  background:#d7e400;
+  color:#10120a;
+  font-weight:700;
+}
+
+.catalog-clear-filters{
+  white-space:nowrap;
+}
+
+@media(max-width:700px){
+  .wine-listing-toolbar{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:9px!important;
+    padding:11px!important;
+  }
+
+  .catalog-search-field,
+  .catalog-filter-dropdown,
+  .catalog-clear-filters{
+    width:100%!important;
+  }
+
+  .catalog-filter-trigger{
+    height:42px;
+    font-size:14px;
+  }
+
+  .catalog-filter-menu{
+    position:relative;
+    top:auto;
+    margin-top:5px;
+    max-height:230px;
+    box-shadow:none;
+    border-color:rgba(198,211,21,.35);
+  }
+
+  .catalog-filter-menu button{
+    min-height:40px;
+    font-size:13px;
+  }
+
+  .catalog-clear-filters{
+    height:42px!important;
+    border-color:#c6d315!important;
+    background:#11130f!important;
+    color:#d6e000!important;
+  }
+}
+
+
+/* ===== Ajuste final navbar, desplegables y banner central ===== */
+
+/* El logo queda completamente contenido en el navbar.
+   No se superpone ni forma parte visual de los banners. */
+.site-header .brand,
+.site-header.is-compact .brand{
+  width:76px!important;
+  height:76px!important;
+  margin:0!important;
+  transform:none!important;
+  align-self:center!important;
+  overflow:hidden!important;
+}
+
+.site-header .brand img,
+.site-header.is-compact .brand img{
+  width:76px!important;
+  height:76px!important;
+  object-fit:contain!important;
+}
+
+.site-header,
+.header-shell{
+  overflow:visible!important;
+}
+
+/* Menús del navbar más claros y fáciles de recorrer */
+@media(min-width:1001px){
+  .nav-dropdown-panel{
+    top:calc(100% + 10px)!important;
+    padding:12px!important;
+    border:1px solid rgba(198,211,21,.28)!important;
+    background:rgba(9,10,8,.98)!important;
+    box-shadow:0 22px 54px rgba(0,0,0,.42)!important;
+  }
+
+  .grouped-menu-panel{
+    width:390px!important;
+    min-width:390px!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:4px 8px!important;
+  }
+
+  .grouped-menu-panel a,
+  .grouped-menu-panel button,
+  .category-menu-panel button{
+    min-height:42px!important;
+    padding:0 14px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    border:1px solid transparent!important;
+    background:transparent!important;
+    color:#d9dcd5!important;
+    font-size:11px!important;
+    font-weight:600!important;
+    letter-spacing:.04em!important;
+    text-transform:none!important;
+    text-align:left!important;
+  }
+
+  .grouped-menu-panel a:hover,
+  .grouped-menu-panel button:hover,
+  .category-menu-panel button:hover{
+    border-color:rgba(198,211,21,.22)!important;
+    background:#171a11!important;
+    color:#d6e000!important;
+  }
+
+  .winery-panel{
+    width:min(920px,calc(100vw - 64px))!important;
+    min-width:720px!important;
+    max-height:520px!important;
+    padding:14px!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:4px 12px!important;
+  }
+
+  .winery-panel button{
+    min-height:42px!important;
+    padding:0 12px!important;
+    display:flex!important;
+    align-items:center!important;
+    border:1px solid transparent!important;
+    background:transparent!important;
+    color:#d7dad3!important;
+    font-size:11px!important;
+    text-align:left!important;
+  }
+
+  .winery-panel button:hover{
+    border-color:rgba(198,211,21,.22)!important;
+    background:#171a11!important;
+    color:#d6e000!important;
+  }
+}
+
+/* Banner central: ancho completo y exactamente la mitad de alto del hero.
+   Desktop recomendado 1920×410. Mobile recomendado 1080×750. */
+.premium-banner,
+.premium-banner--uploaded{
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1920/410!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  border:0!important;
+}
+
+.premium-banner--uploaded .premium-banner-picture,
+.premium-banner-picture{
+  position:absolute!important;
+  inset:0!important;
+}
+
+.premium-banner--uploaded .premium-banner-picture img,
+.premium-banner-picture img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+}
+
+@media(max-width:700px){
+  .site-header .brand,
+  .site-header.is-compact .brand,
+  .site-header .brand img,
+  .site-header.is-compact .brand img{
+    width:56px!important;
+    height:56px!important;
+  }
+
+  .premium-banner,
+  .premium-banner--uploaded{
+    width:100%!important;
+    aspect-ratio:1080/750!important;
+  }
+
+  .premium-banner--uploaded .premium-banner-picture img,
+  .premium-banner-picture img{
+    object-fit:cover!important;
+  }
+}

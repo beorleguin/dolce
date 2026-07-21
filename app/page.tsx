@@ -6,11 +6,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { formatPrice, getCartFromStorage, saveCartToStorage, type CartItem, type FeaturedWine } from '@/lib/featuredWines';
 import { createClient } from '@/lib/supabase/client';
 
-const heroSlides = [
-  { eyebrow:'Pasión · tradición · excelencia', title:'Vinos que cuentan historias únicas', description:'Una selección cuidada de vinos y etiquetas elegidas para quienes valoran cada detalle.', cta:'Descubrir selección' },
-  { eyebrow:'Momentos extraordinarios', title:'Vinos, espumantes y delicatessen', description:'Una experiencia selecta para regalar, descubrir y disfrutar.', cta:'Explorar categorías' },
-  { eyebrow:'Selección privada', title:'Etiquetas icónicas, curadas para vos', description:'Descubrí bodegas, varietales y colecciones elegidas con criterio experto.', cta:'Ver colección' },
+const fallbackHeroSlides = [
+  { eyebrow:'Pasión · tradición · excelencia', title:'Vinos que cuentan historias únicas', description:'Una selección cuidada de vinos y etiquetas elegidas para quienes valoran cada detalle.', cta:'Descubrir selección', desktopImage:'', mobileImage:'' },
+  { eyebrow:'Momentos extraordinarios', title:'Vinos, espumantes y delicatessen', description:'Una experiencia selecta para regalar, descubrir y disfrutar.', cta:'Explorar categorías', desktopImage:'', mobileImage:'' },
+  { eyebrow:'Selección privada', title:'Etiquetas icónicas, curadas para vos', description:'Descubrí bodegas, varietales y colecciones elegidas con criterio experto.', cta:'Ver colección', desktopImage:'', mobileImage:'' },
 ];
+
+type PublicBanner = {
+  id?: string;
+  type: 'hero' | 'middle';
+  title: string;
+  subtitle: string;
+  desktop_image_url: string;
+  mobile_image_url: string;
+  enabled: boolean;
+  sort_order: number;
+};
 
 const categoryCards = [
   { title:'Vinos', action:'Ver selección', href:'#vinos' },
@@ -132,6 +143,8 @@ export default function Home() {
   const [headerCompact,setHeaderCompact] = useState(false);
   const [headerSearchOpen,setHeaderSearchOpen] = useState(false);
   const [catalogPdfUrl,setCatalogPdfUrl] = useState('/catalogo.pdf');
+  const [heroBanners,setHeroBanners] = useState(fallbackHeroSlides);
+  const [middleBanner,setMiddleBanner] = useState<PublicBanner|null>(null);
 
   useEffect(() => {
     const supabase=createClient();
@@ -183,6 +196,14 @@ export default function Home() {
           .limit(6);
         if(wineryError) throw wineryError;
 
+        const {data:bannerRows,error:bannerError}=await supabase
+          .from('site_banners')
+          .select('id,type,title,subtitle,desktop_image_url,mobile_image_url,enabled,sort_order')
+          .eq('enabled',true)
+          .in('type',['hero','middle'])
+          .order('sort_order',{ascending:true});
+        if(bannerError) throw bannerError;
+
         const mapped:PublicProduct[]=rows.map((row:any,index)=>({
           id:row.id,
           name:(row.article_name||row.name||'Producto sin nombre').trim(),
@@ -205,6 +226,24 @@ export default function Home() {
           setFeaturedWineries((wineryRows||[])
             .filter((w:any)=>!hiddenPublicWineries.includes(normalizeLabel(w.name||'')))
             .map((w:any)=>({name:cleanWineryName(w.name),image:w.logo_url||''})));
+
+          const publicHeroBanners=(bannerRows||[])
+            .filter((banner:any)=>banner.type==='hero'&&banner.desktop_image_url)
+            .slice(0,3)
+            .map((banner:any,index)=>({
+              eyebrow:(banner.subtitle||'').trim(),
+              title:(banner.title||'').trim(),
+              description:'',
+              cta:'',
+              desktopImage:banner.desktop_image_url||'',
+              mobileImage:banner.mobile_image_url||banner.desktop_image_url||'',
+              key:banner.id||`hero-${index}`,
+            }));
+
+          setHeroBanners(publicHeroBanners.length?publicHeroBanners:fallbackHeroSlides);
+          setMiddleBanner(
+            ((bannerRows||[]).find((banner:any)=>banner.type==='middle'&&banner.desktop_image_url)||null) as PublicBanner|null,
+          );
         }
       }catch(error:any){
         console.error('No se pudo cargar el catálogo público:',error);
@@ -237,9 +276,14 @@ export default function Home() {
   },[]);
 
   useEffect(()=>{
-    const timer=window.setInterval(()=>setActiveSlide(v=>(v+1)%heroSlides.length),6500);
+    setActiveSlide(0);
+    if(heroBanners.length<=1) return;
+    const timer=window.setInterval(
+      ()=>setActiveSlide(value=>(value+1)%heroBanners.length),
+      6500,
+    );
     return()=>window.clearInterval(timer);
-  },[]);
+  },[heroBanners.length]);
 
   useEffect(()=>{
     document.body.style.overflow=(modal||selectedProduct||cartOpen)?'hidden':'';
@@ -337,6 +381,14 @@ export default function Home() {
         <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
       </Link>
       <nav className={menuOpen?'main-nav is-open':'main-nav'} aria-label="Navegación principal">
+        <button
+          type="button"
+          className="mobile-nav-close"
+          aria-label="Cerrar menú"
+          onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}
+        >
+          <X size={22}/>
+        </button>
         <div className="nav-dropdown">
           <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>Vinos <ChevronDown size={13}/></button>
           <div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='vinos'?' is-mobile-open':''}`}>{Object.entries(wineGroups).map(([label])=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>{label}</Link>)}</div>
@@ -353,7 +405,12 @@ export default function Home() {
           <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='categorias'?'':'categorias')}>Categorías <ChevronDown size={13}/></button>
           <div className={`nav-dropdown-panel category-menu-panel${mobileDropdown==='categorias'?' is-mobile-open':''}`}>{Object.entries(categoryGroups).map(([label,terms])=><button key={label} onClick={()=>{openGroup(label,terms,'Categoría');setMenuOpen(false);setMobileDropdown('')}}>{label}</button>)}</div>
         </div>
-        <a href="#colecciones" onClick={()=>setMenuOpen(false)}>Colecciones</a><a href="#nosotros" onClick={()=>setMenuOpen(false)}>Sobre nosotros</a>
+        <a href="#colecciones" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Colecciones</a>
+        <a href="#nosotros" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Sobre nosotros</a>
+        <Link href="/admin" className="mobile-crm-link" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>
+          <UserRound size={16}/>
+          Acceso al CRM
+        </Link>
       </nav>
       <div className="header-actions">
         <button className="icon-action search-trigger" aria-label="Buscar" onClick={()=>setHeaderSearchOpen(value=>!value)}><Search size={19}/></button>
@@ -377,16 +434,55 @@ export default function Home() {
     </div></header>
 
     <section id="inicio" className="hero">
-      {heroSlides.map((slide,index)=><div key={slide.title} className={`hero-slide hero-slide--${index+1} ${index===activeSlide?'is-active':''}`}/>) }
-      <div className="hero-shade"/><div className="hero-inner"><div className="hero-copy" key={activeSlide}><p className="hero-eyebrow">{heroSlides[activeSlide].eyebrow}</p><h1>{heroSlides[activeSlide].title}</h1><p className="hero-description">{heroSlides[activeSlide].description}</p><a href="#vinos" className="hero-button">{heroSlides[activeSlide].cta}</a></div></div>
+      {heroBanners.map((slide,index)=><div
+        key={(slide as any).key||slide.desktopImage||slide.title||index}
+        className={`hero-slide hero-slide--${index+1} ${index===activeSlide?'is-active':''}`}
+      >
+        {slide.desktopImage&&<picture className="hero-banner-picture">
+          <source media="(max-width: 700px)" srcSet={slide.mobileImage||slide.desktopImage}/>
+          <img src={slide.desktopImage} alt={slide.title||`Banner Dolce Vino ${index+1}`}/>
+        </picture>}
+      </div>)}
+      <div className="hero-shade"/>
+      {(heroBanners[activeSlide]?.title||heroBanners[activeSlide]?.eyebrow)&&<div className="hero-inner">
+        <div className="hero-copy" key={activeSlide}>
+          {heroBanners[activeSlide]?.eyebrow&&<p className="hero-eyebrow">{heroBanners[activeSlide].eyebrow}</p>}
+          {heroBanners[activeSlide]?.title&&<h1>{heroBanners[activeSlide].title}</h1>}
+          {heroBanners[activeSlide]?.description&&<p className="hero-description">{heroBanners[activeSlide].description}</p>}
+          {heroBanners[activeSlide]?.cta&&<a href="#vinos" className="hero-button">{heroBanners[activeSlide].cta}</a>}
+        </div>
+      </div>}
     </section>
 
     <section id="bodegas" className="prestige-strip"><div className="prestige-inner"><div className="featured-section-title"><span/><h2>Bodegas destacadas</h2><span/></div><div className="winery-marks">{featuredWineries.length?featuredWineries.map(w=><article className="winery-mark" key={w.name}>{w.image?<img className="winery-logo" src={w.image} alt={`Logo de ${w.name}`}/>:<span className="winery-name-fallback">{w.name}</span>}</article>):<p className="public-empty-message">Las bodegas destacadas se administran desde el CRM.</p>}</div></div></section>
 
     <section id="vinos" className="featured-wines-section"><div className="featured-section-title"><span/><h2>Vinos destacados</h2><span/></div>{catalogLoading?<p className="catalog-state">Cargando catálogo...</p>:<div className="featured-wines-grid">{featuredWines.map(w=><ProductCard key={w.id} wine={w}/>)}</div>}{catalogError&&<p className="catalog-warning">Se mostró un catálogo de respaldo porque Supabase respondió: {catalogError}</p>}</section>
 
-    <section id="catalogo" className="premium-banner">
-      <div className="premium-banner-shade"/><div className="premium-banner-copy"><span>Selección Dolce Vino</span><h2>Vinos de alta gama para momentos únicos</h2><p>Etiquetas seleccionadas de bodegas destacadas, reunidas en un catálogo pensado para descubrir, elegir y compartir.</p><a href={catalogPdfUrl} target="_blank" rel="noreferrer" download>Descargar catálogo actual</a></div>
+    <section
+      id="catalogo"
+      className={`premium-banner${middleBanner?.desktop_image_url?' premium-banner--uploaded':''}`}
+    >
+      {middleBanner?.desktop_image_url&&<picture className="premium-banner-picture">
+        <source media="(max-width: 700px)" srcSet={middleBanner.mobile_image_url||middleBanner.desktop_image_url}/>
+        <img src={middleBanner.desktop_image_url} alt={middleBanner.title||'Descargar catálogo Dolce Vino'}/>
+      </picture>}
+      <div className="premium-banner-shade"/>
+      {(middleBanner?.title||middleBanner?.subtitle||!middleBanner?.desktop_image_url)&&<div className="premium-banner-copy">
+        <span>Selección Dolce Vino</span>
+        <h2>{middleBanner?.title||'Vinos de alta gama para momentos únicos'}</h2>
+        <p>{middleBanner?.subtitle||'Etiquetas seleccionadas de bodegas destacadas, reunidas en un catálogo pensado para descubrir, elegir y compartir.'}</p>
+        <a href={catalogPdfUrl} target="_blank" rel="noreferrer" download>Descargar catálogo actual</a>
+      </div>}
+      {middleBanner?.desktop_image_url&&!middleBanner.title&&!middleBanner.subtitle&&
+        <a
+          className="premium-banner-full-link"
+          href={catalogPdfUrl}
+          target="_blank"
+          rel="noreferrer"
+          download
+          aria-label="Descargar catálogo actual"
+        />
+      }
     </section>
 
     <section id="nuestros-vinos" className="catalog-grid-section"><div className="featured-section-title"><span/><h2>Nuestros vinos</h2><span/></div><div className="catalog-inline-filters"><label><Search size={17}/><input value={catalogQuery} onChange={event=>setCatalogQuery(event.target.value)} placeholder="Buscar vino o bodega"/></label><select value={catalogVarietal} onChange={event=>setCatalogVarietal(event.target.value)}><option value="">Todos los varietales</option>{catalogVarietals.map(varietal=><option key={varietal} value={varietal}>{varietal}</option>)}</select>{(catalogQuery||catalogVarietal)&&<button type="button" onClick={()=>{setCatalogQuery('');setCatalogVarietal('')}}>Limpiar filtros</button>}</div>{catalogLoading?<p className="catalog-state">Cargando productos desde Supabase...</p>:visibleCatalog.length?<><p className="catalog-results-count">{filteredWineCatalog.length} vinos encontrados</p><div className="catalog-products-grid">{visibleCatalog.map(w=><ProductCard key={w.id} wine={w} compact/>)}</div>{hasMoreWines&&<button className="show-more-button" onClick={showNextWines}>Ver más vinos</button>}</>:<p className="catalog-state">No encontramos vinos con esos filtros.</p>}</section>

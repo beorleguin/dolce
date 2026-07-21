@@ -38,6 +38,7 @@ export default function WinesPage(){
   const [headerCompact,setHeaderCompact]=useState(false);
   const [headerSearchOpen,setHeaderSearchOpen]=useState(false);
   const [cartOpen,setCartOpen]=useState(false);
+  const [filterOpen,setFilterOpen]=useState('');
 
   useEffect(()=>{
     setGroup(new URLSearchParams(window.location.search).get('grupo')||'');
@@ -83,6 +84,11 @@ export default function WinesPage(){
     return()=>{document.body.style.overflow='';};
   },[selected,cartOpen,menuOpen]);
 
+  useEffect(()=>{
+    setMenuOpen(false);
+    setMobileDropdown('');
+  },[group,winery,varietal]);
+
   const wineries=useMemo(()=>Array.from(new Set(wines.map(w=>w.winery).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'es')),[wines]);
   const varietals=useMemo(()=>Array.from(new Set(wines.map(w=>w.varietal).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'es')),[wines]);
 
@@ -106,6 +112,51 @@ export default function WinesPage(){
     saveCartToStorage(next as CartItem[]);
   };
 
+  const FilterDropdown=({
+    id,
+    value,
+    placeholder,
+    options,
+    onChange,
+  }:{
+    id:string;
+    value:string;
+    placeholder:string;
+    options:string[];
+    onChange:(value:string)=>void;
+  })=>(
+    <div className={`catalog-filter-dropdown${filterOpen===id?' is-open':''}`}>
+      <button
+        type="button"
+        className="catalog-filter-trigger"
+        onClick={()=>setFilterOpen(current=>current===id?'':id)}
+        aria-expanded={filterOpen===id}
+      >
+        <span>{value||placeholder}</span>
+        <ChevronDown size={16}/>
+      </button>
+
+      {filterOpen===id&&<div className="catalog-filter-menu">
+        <button
+          type="button"
+          className={!value?'is-selected':''}
+          onClick={()=>{onChange('');setFilterOpen('')}}
+        >
+          {placeholder}
+        </button>
+
+        {options.map(option=><button
+          key={option}
+          type="button"
+          className={value===option?'is-selected':''}
+          onClick={()=>{onChange(option);setFilterOpen('')}}
+        >
+          {option}
+        </button>)}
+      </div>}
+    </div>
+  );
+
   const cartCount=cart.reduce((sum,item)=>sum+item.boxes,0);
   const cartTotal=cart.reduce((sum,item)=>{
     const linePrice=isEstuche(item.name)?item.pricePerUnit:item.pricePerUnit*item.unitsPerBox;
@@ -123,8 +174,51 @@ export default function WinesPage(){
         <img src="/assets/logo_dolce_vino.png" alt="Dolce Vino" />
       </Link>
       <nav className={menuOpen?'main-nav is-open':'main-nav'}>
-        <div className="nav-dropdown"><button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>Vinos <ChevronDown size={13}/></button><div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='vinos'?' is-mobile-open':''}`}>{Object.keys(groups).map(label=><Link key={label} href={`/vinos?grupo=${encodeURIComponent(label)}`} onClick={()=>{setGroup(label);setMenuOpen(false);setMobileDropdown('')}}>{label}</Link>)}</div></div>
-        <Link href="/#bodegas">Bodegas</Link><Link href="/#categorias">Categorías</Link><Link href="/#colecciones">Colecciones</Link><Link href="/#nosotros">Sobre nosotros</Link>
+        <button
+          type="button"
+          className="mobile-nav-close"
+          aria-label="Cerrar menú"
+          onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}
+        >
+          <X size={22}/>
+        </button>
+        <div className="nav-dropdown">
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='vinos'?'':'vinos')}>
+            Vinos <ChevronDown size={13}/>
+          </button>
+          <div className={`nav-dropdown-panel grouped-menu-panel${mobileDropdown==='vinos'?' is-mobile-open':''}`}>
+            {Object.keys(groups).map(label=><Link
+              key={label}
+              href={`/vinos?grupo=${encodeURIComponent(label)}`}
+              onClick={()=>{setGroup(label);setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {label}
+            </Link>)}
+          </div>
+        </div>
+
+        <div className="nav-dropdown">
+          <button className="nav-dropdown-trigger" onClick={()=>setMobileDropdown(value=>value==='bodegas'?'':'bodegas')}>
+            Bodegas <ChevronDown size={13}/>
+          </button>
+          <div className={`nav-dropdown-panel winery-panel${mobileDropdown==='bodegas'?' is-mobile-open':''}`}>
+            {wineries.map(value=><button
+              key={value}
+              type="button"
+              onClick={()=>{setWinery(value);setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {value}
+            </button>)}
+          </div>
+        </div>
+
+        <Link href="/#categorias" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Categorías</Link>
+        <Link href="/#colecciones" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Colecciones</Link>
+        <Link href="/#nosotros" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Sobre nosotros</Link>
+        <Link href="/admin" className="mobile-crm-link" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>
+          <UserRound size={16}/>
+          Acceso al CRM
+        </Link>
       </nav>
       <div className="header-actions">
         <button className="icon-action search-trigger" aria-label="Buscar" onClick={()=>setHeaderSearchOpen(value=>!value)}><Search size={19}/></button>
@@ -152,11 +246,52 @@ export default function WinesPage(){
 
     <section className="wine-listing-content">
       <div className="wine-listing-toolbar">
-        <label><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar vino, bodega o varietal"/></label>
-        <select value={group} onChange={e=>setGroup(e.target.value)}><option value="">Todos los vinos</option>{Object.keys(groups).map(label=><option key={label}>{label}</option>)}</select>
-        <select value={winery} onChange={e=>setWinery(e.target.value)}><option value="">Todas las bodegas</option>{wineries.map(value=><option key={value}>{value}</option>)}</select>
-        <select value={varietal} onChange={e=>setVarietal(e.target.value)}><option value="">Todos los varietales</option>{varietals.map(value=><option key={value}>{value}</option>)}</select>
-        {(query||group||winery||varietal)&&<button onClick={()=>{setQuery('');setGroup('');setWinery('');setVarietal('')}}>Limpiar</button>}
+        <label className="catalog-search-field">
+          <Search size={17}/>
+          <input
+            value={query}
+            onChange={event=>setQuery(event.target.value)}
+            placeholder="Buscar vino, bodega o varietal"
+          />
+        </label>
+
+        <FilterDropdown
+          id="group"
+          value={group}
+          placeholder="Todos los vinos"
+          options={Object.keys(groups)}
+          onChange={setGroup}
+        />
+
+        <FilterDropdown
+          id="winery"
+          value={winery}
+          placeholder="Todas las bodegas"
+          options={wineries}
+          onChange={setWinery}
+        />
+
+        <FilterDropdown
+          id="varietal"
+          value={varietal}
+          placeholder="Todos los varietales"
+          options={varietals}
+          onChange={setVarietal}
+        />
+
+        {(query||group||winery||varietal)&&<button
+          type="button"
+          className="catalog-clear-filters"
+          onClick={()=>{
+            setQuery('');
+            setGroup('');
+            setWinery('');
+            setVarietal('');
+            setFilterOpen('');
+          }}
+        >
+          Limpiar filtros
+        </button>}
       </div>
       <p className="wine-listing-count">{filtered.length} productos encontrados</p>
       <div className="wine-listing-grid">
@@ -198,7 +333,17 @@ export default function WinesPage(){
       <section className="product-detail-modal" onMouseDown={e=>e.stopPropagation()}>
         <button className="product-detail-close" onClick={()=>setSelected(null)}><X/></button>
         <div className="product-detail-image">{selected.image?<img src={selected.image} alt={selected.name}/>:<div className="image-empty-state"><Package size={48}/><span>Sin imagen</span></div>}</div>
-        <div className="product-detail-copy"><span className="product-detail-eyebrow">{selected.varietal||'Selección Dolce Vino'}</span><h2>{selected.name}</h2>{selected.winery&&<p className="product-detail-winery">{selected.winery}</p>}<p className="product-detail-description">{selected.description||'Una etiqueta seleccionada por Dolce Vino para disfrutar y compartir.'}</p><div className="product-detail-meta"><strong>{formatPrice(selected.pricePerUnit)}</strong><span>{isEstuche(selected.name)?'Precio total del estuche':`Caja x${selected.unitsPerBox}`}</span></div><button className="product-detail-add" onClick={()=>addBox(selected)}>{isEstuche(selected.name)?'Agregar estuche':'Agregar caja'}</button></div>
+        <div className="product-detail-copy"><span className="product-detail-eyebrow">{selected.varietal||'Selección Dolce Vino'}</span><h2>{selected.name}</h2>{selected.winery&&<p className="product-detail-winery">{selected.winery}</p>}<p className="product-detail-description">{selected.description||'Una etiqueta seleccionada por Dolce Vino para disfrutar y compartir.'}</p><div className="product-detail-meta"><strong>{formatPrice(selected.pricePerUnit)}</strong><span>{isEstuche(selected.name)?'Precio total del estuche':'Compra mínima: caja cerrada'}</span></div><button
+          className="product-detail-add"
+          onClick={()=>{
+            const product=selected;
+            setSelected(null);
+            addBox(product);
+            setCartOpen(true);
+          }}
+        >
+          {isEstuche(selected.name)?'Agregar estuche':'Agregar caja'}
+        </button></div>
       </section>
     </div>}
   </main>;

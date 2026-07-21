@@ -1035,3 +1035,88 @@
 .page textarea{
   font-size:inherit;
 }
+
+
+/* ===== Tabla de vinos: columnas compactas y botón Ver completo ===== */
+.table{
+  min-width:840px!important;
+}
+
+.table th,
+.table td{
+  padding-left:5px!important;
+  padding-right:5px!important;
+}
+
+.table th:nth-child(1),
+.table td:nth-child(1){
+  width:48px!important;
+  min-width:48px!important;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2){
+  width:27%!important;
+  padding-left:3px!important;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3){
+  width:8%!important;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4){
+  width:12%!important;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5){
+  width:10%!important;
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6){
+  width:8%!important;
+}
+
+.table th:nth-child(7),
+.table td:nth-child(7){
+  width:5%!important;
+  text-align:center!important;
+}
+
+.table th:nth-child(8),
+.table td:nth-child(8){
+  width:52px!important;
+  min-width:52px!important;
+  text-align:center!important;
+  overflow:visible!important;
+}
+
+.table th:nth-child(9),
+.table td:nth-child(9){
+  width:72px!important;
+  min-width:72px!important;
+}
+
+.thumbnail,
+.emptyThumbnail{
+  width:38px!important;
+  height:48px!important;
+}
+
+.visibilityCell{
+  width:100%!important;
+  min-width:42px!important;
+  justify-content:center!important;
+  overflow:visible!important;
+}
+
+.visibilityButton,
+.visibilityButtonOff{
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  overflow:visible!important;
+}
