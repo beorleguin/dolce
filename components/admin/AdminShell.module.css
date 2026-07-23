@@ -326,3 +326,59 @@
     display:none;
   }
 }
+
+/* Mantener siempre visible el cierre de sesión, incluso con zoom o poca altura. */
+.sidebar{
+  overflow:hidden;
+}
+
+.navigation{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  align-content:start;
+  padding-right:4px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(198,211,21,.35) transparent;
+}
+
+.navigation::-webkit-scrollbar{
+  width:5px;
+}
+
+.navigation::-webkit-scrollbar-thumb{
+  background:rgba(198,211,21,.35);
+  border-radius:999px;
+}
+
+.sidebarFooter{
+  flex:0 0 auto;
+  margin-top:12px;
+  padding-top:12px;
+  background:#090a08;
+}
+
+@media(max-height:760px) and (min-width:761px){
+  .sidebar{
+    padding-top:14px;
+    padding-bottom:14px;
+  }
+
+  .sidebarHeader{
+    min-height:88px;
+    margin-bottom:10px;
+  }
+
+  .logoLink{
+    width:82px;
+    height:82px;
+  }
+
+  .navigation{
+    gap:5px;
+  }
+
+  .navItem{
+    min-height:43px;
+  }
+}

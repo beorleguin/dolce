@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import {
   ExternalLink,
   FileDown,
+  Gift,
   ImagePlus,
   LayoutDashboard,
   LogOut,
@@ -27,6 +28,7 @@ type AdminShellProps = {
 const navigation = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/vinos', label: 'Gestión de vinos', icon: Wine },
+  { href: '/admin/mixes', label: 'Mixes y promociones', icon: Gift },
   { href: '/admin/bodegas', label: 'Bodegas', icon: Warehouse },
   { href: '/admin/banners', label: 'Banners', icon: ImagePlus },
   { href: '/admin/catalogo', label: 'Catálogo PDF', icon: FileDown },

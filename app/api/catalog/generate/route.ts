@@ -37,6 +37,7 @@ const COLORS = {
 };
 
 const CATEGORY_ORDER = [
+  'Promociones',
   'Vinos',
   'Espumantes',
   'Destilados',
@@ -48,17 +49,20 @@ const CATEGORY_ORDER = [
 ];
 
 type RawProduct = {
+  id: string;
   name: string;
   article_name: string | null;
   description: string | null;
   price: number | string;
   units_per_box: number | string;
+  is_mix: boolean | null;
   categories: { name?: string } | { name?: string }[] | null;
   wineries: { name?: string } | { name?: string }[] | null;
   varietals: { name?: string } | { name?: string }[] | null;
 };
 
 type CatalogProduct = {
+  id: string;
   name: string;
   detail: string;
   description: string;
@@ -67,6 +71,7 @@ type CatalogProduct = {
   varietal: string;
   price: number;
   unitsPerBox: number;
+  isMix: boolean;
 };
 
 function relatedName(value: RawProduct['categories']) {
@@ -85,6 +90,7 @@ function normalize(value: string) {
 function publicCategory(rawCategory: string, productName: string) {
   const value = normalize(`${rawCategory} ${productName}`);
 
+  if (value.includes('promocion') || value.includes('promoción') || value.includes(' mix ') || value.startsWith('mix ')) return 'Promociones';
   if (value.includes('espumante')) return 'Espumantes';
   if (value.includes('vino')) return 'Vinos';
   if (
@@ -174,15 +180,15 @@ function drawFooter(
   drawLogo(page, logo, MARGIN, 16, 24, 24);
   page.drawText('www.dolcevino.com.ar', {
     x: MARGIN + 34,
-    y: 25,
+    y: 29,
     size: 7.5,
     font: bold,
     color: COLORS.ink,
   });
-  page.drawText('Mendoza, Argentina', {
-    x: MARGIN + 128,
-    y: 25,
-    size: 7.5,
+  page.drawText('Carril Urquiza 368, Local 1-2 · Villa Nueva, Mendoza', {
+    x: MARGIN + 34,
+    y: 18,
+    size: 6.6,
     font: regular,
     color: COLORS.muted,
   });
@@ -265,7 +271,7 @@ function addMainCover(
     color: COLORS.white,
   });
 
-  const location = 'Mendoza, Argentina';
+  const location = 'Carril Urquiza 368, Local 1-2 · Villa Nueva, Mendoza';
   const locationWidth = regular.widthOfTextAtSize(location, 8.5);
   page.drawText(location, {
     x: (PAGE_WIDTH - locationWidth) / 2,
@@ -313,7 +319,9 @@ function addCategoryCover(
   });
 
   const description =
-    category === 'Vinos'
+    category === 'Promociones'
+      ? 'Mixes y promociones preparados especialmente por Dolce Vino.'
+      : category === 'Vinos'
       ? 'Etiquetas organizadas por bodega y ordenadas alfabéticamente.'
       : category === 'Espumantes'
         ? 'Una selección para brindar, celebrar y compartir.'
@@ -388,6 +396,28 @@ function drawGroupHeading(page: PDFPage, text: string, x: number, y: number, bol
   });
 }
 
+function isSingleUnitCatalogProduct(product: CatalogProduct) {
+  const value = normalize(`${product.category} ${product.name} ${product.detail}`);
+  return product.isMix || product.unitsPerBox === 1 || [
+    'destilado',
+    'whisky',
+    'whiskey',
+    'gin',
+    'ginebra',
+    'ron',
+    'vodka',
+    'licor',
+    'aperitivo',
+    'vermut',
+    'vermouth',
+    'tequila',
+    'cognac',
+    'brandy',
+    'pisco',
+    'estuche',
+  ].some((term) => value.includes(term));
+}
+
 function drawProduct(
   page: PDFPage,
   product: CatalogProduct,
@@ -406,9 +436,11 @@ function drawProduct(
     color: COLORS.ink,
   });
 
-  const metadata = [product.varietal, product.name !== product.detail ? product.name : '']
-    .filter(Boolean)
-    .join(' · ');
+  const metadata = product.isMix
+    ? product.description
+    : [product.varietal, product.name !== product.detail ? product.name : '']
+        .filter(Boolean)
+        .join(' · ');
   page.drawText(truncate(metadata, 62), {
     x,
     y: y - 13,
@@ -417,10 +449,10 @@ function drawProduct(
     color: COLORS.muted,
   });
 
-  const isEstuche = normalize(`${product.name} ${product.detail}`).includes('estuche');
+  const isSingleUnit = isSingleUnitCatalogProduct(product);
 
-  if (isEstuche) {
-    const estucheLabel = 'Precio total del estuche';
+  if (isSingleUnit) {
+    const estucheLabel = product.isMix ? 'Precio promocional del mix' : 'Precio por unidad';
     page.drawText(estucheLabel, {
       x,
       y: y - 28,
@@ -437,7 +469,7 @@ function drawProduct(
       color: COLORS.ink,
     });
 
-    const unitsLabel = 'Estuche x1';
+    const unitsLabel = product.isMix ? 'Mix x1' : 'Unidad x1';
     const unitWidth = regular.widthOfTextAtSize(unitsLabel, 6.8);
     page.drawText(unitsLabel, {
       x: x + COLUMN_WIDTH - unitWidth,
@@ -558,26 +590,58 @@ export async function POST() {
     const { data, error } = await supabase
       .from('products')
       .select(
-        'name,article_name,description,price,units_per_box,categories(name),wineries(name),varietals(name)',
+        'id,name,article_name,description,price,units_per_box,is_mix,categories(name),wineries(name),varietals(name)',
       )
       .eq('enabled', true)
       .order('name');
 
     if (error) throw error;
 
+    const mixIds = ((data || []) as unknown as RawProduct[])
+      .filter((product) => Boolean(product.is_mix))
+      .map((product) => product.id);
+
+    const mixDescriptions = new Map<string, string>();
+    if (mixIds.length) {
+      const { data: mixItems, error: mixItemsError } = await supabase
+        .from('product_mix_items')
+        .select('mix_product_id,quantity,products:product_id(name,article_name)')
+        .in('mix_product_id', mixIds)
+        .order('sort_order', { ascending: true });
+
+      if (mixItemsError) throw mixItemsError;
+
+      for (const item of mixItems || []) {
+        const productRelation = Array.isArray((item as any).products)
+          ? (item as any).products[0]
+          : (item as any).products;
+        const productName = String(productRelation?.article_name || productRelation?.name || 'Producto').trim();
+        const quantity = Math.max(1, Number((item as any).quantity) || 1);
+        const current = mixDescriptions.get(String((item as any).mix_product_id)) || '';
+        const nextItem = `${quantity} x ${productName}`;
+        mixDescriptions.set(String((item as any).mix_product_id), current ? `${current} · ${nextItem}` : nextItem);
+      }
+    }
+
     const products: CatalogProduct[] = ((data || []) as unknown as RawProduct[])
       .map((product) => {
         const detail = String(product.article_name || product.name || 'Producto').trim();
         const rawCategory = relatedName(product.categories);
         return {
+          id: String(product.id),
           name: String(product.name || detail).trim(),
           detail,
-          description: String(product.description || '').trim(),
-          category: publicCategory(rawCategory, detail),
+          description: product.is_mix
+            ? [String(product.description || '').trim(), mixDescriptions.get(String(product.id)) || ''].filter(Boolean).join(' — ')
+            : String(product.description || '').trim(),
+          category: product.is_mix ? 'Promociones' : publicCategory(rawCategory, detail),
           winery: cleanWinery(relatedName(product.wineries)),
           varietal: relatedName(product.varietals),
           price: Number(product.price) || 0,
-          unitsPerBox: Math.max(1, Number(product.units_per_box) || 6),
+          unitsPerBox: product.is_mix || publicCategory(rawCategory, detail) === 'Destilados'
+            ? 1
+            : Math.max(1, Number(product.units_per_box) || 6),
+          isMix: Boolean(product.is_mix),
         };
       })
       .sort((a, b) => {
@@ -631,7 +695,8 @@ export async function POST() {
         generated_at: new Date().toISOString(),
         products: products.length,
         pages: pdf.getPageCount(),
-        design_version: 2,
+        design_version: 3,
+        address: 'Carril Urquiza 368, Local 1-2, M5521 Villa Nueva, Mendoza',
       },
     });
 

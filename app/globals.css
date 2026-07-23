@@ -3832,3 +3832,185 @@ img{max-width:100%}
 .product-detail-image{
   isolation:isolate;
 }
+
+
+
+
+/* Carrusel de vinos destacados: tres productos por grupo. */
+.featured-wines-viewport {
+  width: 100%;
+  overflow: hidden;
+}
+
+.featured-wines-section .featured-wines-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.featured-wines-slide {
+  animation: featuredWinesSlideLeft 1.35s cubic-bezier(.22, .61, .36, 1) both;
+}
+
+@keyframes featuredWinesSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(9%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .featured-wines-section .featured-wines-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .featured-wines-section .featured-wines-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* Etapa 3: navegación, categorías, ubicación y cierre del sitio. */
+.category-card {
+  appearance: none;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cta-strip-card--catalog {
+  appearance: none;
+  width: 100%;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cta-strip-book {
+  display: grid !important;
+  place-items: center;
+  overflow: hidden;
+}
+
+.cta-strip-book img {
+  width: 74% !important;
+  height: 74% !important;
+  object-fit: contain;
+}
+
+.location-section {
+  width: min(1320px, calc(100% - 48px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(330px, .8fr) minmax(480px, 1.2fr);
+  min-height: 390px;
+  border: 1px solid #d9ddd3;
+  background: #f5f6f1;
+}
+
+.location-copy {
+  padding: 52px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.location-copy > span {
+  color: #7c8508;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.location-copy h2 {
+  margin: 12px 0 20px;
+  color: #171914;
+  font-size: clamp(28px, 3vw, 44px);
+  line-height: 1.08;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.location-copy p {
+  margin: 0 0 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #555d50;
+  line-height: 1.65;
+}
+
+.location-copy p svg { flex: 0 0 auto; margin-top: 3px; }
+.location-copy a {
+  width: max-content;
+  min-height: 42px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #171914;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.location-map { min-height: 390px; }
+.location-map iframe { width: 100%; height: 100%; min-height: 390px; border: 0; display: block; }
+
+.site-footer {
+  width: 100%;
+  margin: 0;
+  padding: 28px 34px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  background: #10120e;
+  color: #f2f3ed;
+}
+.site-footer img { width: 58px; height: 58px; object-fit: contain; }
+.site-footer > div { display: grid; gap: 3px; }
+.site-footer strong { font-size: 14px; text-transform: uppercase; letter-spacing: .1em; }
+.site-footer span { color: #aeb3a8; font-size: 11px; }
+
+@media (max-width: 860px) {
+  .location-section { grid-template-columns: 1fr; width: 100%; }
+  .location-copy { padding: 34px 26px; }
+  .location-map, .location-map iframe { min-height: 320px; }
+  .site-footer { width: 100%; grid-template-columns: auto 1fr; }
+  .site-footer > span:last-child { grid-column: 1 / -1; }
+}
+
+
+/* Ubicación y footer a todo el ancho del sitio */
+.location-section,
+.site-footer {
+  box-sizing: border-box;
+  max-width: none !important;
+}
+
+.location-map,
+.location-map iframe {
+  min-height: 430px;
+}
+
+@media (max-width: 860px) {
+  .location-map,
+  .location-map iframe {
+    min-height: 320px;
+  }
+}

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Menu, Search, UserRound, ShoppingBag, X, Package, Minus, Plus, ChevronDown, ChevronRight, MessageCircle, Truck, ShieldCheck, Sparkles, Globe2 } from 'lucide-react';
+import { Menu, Search, UserRound, ShoppingBag, X, Package, Minus, Plus, ChevronDown, ChevronRight, MessageCircle, Truck, ShieldCheck, Sparkles, Globe2, MapPin, Navigation } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { formatPrice, getCartFromStorage, saveCartToStorage, type CartItem, type FeaturedWine } from '@/lib/featuredWines';
 import { createClient } from '@/lib/supabase/client';
@@ -26,10 +26,10 @@ type PublicBanner = {
 };
 
 const categoryCards = [
-  { title:'Vinos', action:'Ver selección', href:'#vinos' },
-  { title:'Espumantes', action:'Ver colección', href:'#catalogo' },
-  { title:'Delicatessen', action:'Ver productos', href:'#catalogo' },
-  { title:'Destilados', action:'Ver colección', href:'#catalogo' },
+  { title:'Vinos', action:'Ver selección', drawer:'vinos' },
+  { title:'Espumantes', action:'Ver colección', drawer:'espumantes' },
+  { title:'Delicatessen', action:'Ver productos', drawer:'delicatessen' },
+  { title:'Destilados', action:'Ver colección', drawer:'destilados' },
 ];
 
 const serviceBenefits = [
@@ -112,6 +112,23 @@ const categoryGroups:Record<string,string[]> = {
   'Otros':['otros'],
 };
 
+const distilledMenuGroups:Record<string,string[]> = {
+  'Whisky':['whisky','whiskey'],
+  'Gin y ginebra':['gin','ginebra'],
+  'Ron':['ron'],
+  'Vodka':['vodka'],
+  'Aperitivos y licores':['aperitivo','licor','vermut','vermouth'],
+  'Otros destilados':['tequila','cognac','brandy','pisco','destilado'],
+};
+
+const delicatessenMenuGroups:Record<string,string[]> = {
+  'Delicatessen':['delicatessen','delice','chocolate','queso','conserva','snack','aceituna','mermelada','pate','paté'],
+  'Aceites':['aceite','aceite de oliva'],
+  'Condimentos':['condimento','especia','pimienta'],
+  'Cristalería':['cristaleria','copa cerveza','copa vino','vaso','decantador'],
+  'Accesorios':['accesorio','cuchara','tenedor','sacacorchos','destapador'],
+};
+
 const hiddenPublicWineries=['alma del sur','deposito','dolce vino'];
 
 const cleanWineryName=(value:string)=>value
@@ -157,6 +174,7 @@ export default function Home() {
   const [catalogGenerating,setCatalogGenerating] = useState(false);
   const [heroBanners,setHeroBanners] = useState<typeof fallbackHeroSlides>([]);
   const [middleBanner,setMiddleBanner] = useState<PublicBanner|null>(null);
+  const [featuredStart,setFeaturedStart] = useState(0);
 
   useEffect(() => {
     const supabase=createClient();
@@ -360,8 +378,23 @@ export default function Home() {
     return sortProductsImageFirst(
       source,
       (a,b)=>a.order-b.order,
-    ).slice(0,5);
+    );
   },[wineCatalog]);
+
+  const visibleFeaturedWines=useMemo(()=>{
+    if(featuredWines.length<=3) return featuredWines;
+    return Array.from({length:3},(_,index)=>featuredWines[(featuredStart+index)%featuredWines.length]);
+  },[featuredWines,featuredStart]);
+
+  useEffect(()=>{
+    setFeaturedStart(0);
+    if(featuredWines.length<=3) return;
+    const timer=window.setInterval(
+      ()=>setFeaturedStart(value=>(value+3)%featuredWines.length),
+      7000,
+    );
+    return()=>window.clearInterval(timer);
+  },[featuredWines.length]);
   const wineryNames=useMemo(()=>Array.from(new Set(
     wineCatalog
       .map(w=>cleanWineryName(w.winery))
@@ -587,8 +620,6 @@ export default function Home() {
             Categorías <ChevronDown size={13}/>
           </button>
         </div>
-        <a href="#colecciones" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Colecciones</a>
-        <a href="#nosotros" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>Sobre nosotros</a>
         <Link href="/admin" className="mobile-crm-link" onClick={()=>{setMenuOpen(false);setMobileDropdown('')}}>
           <UserRound size={16}/>
           Acceso al CRM
@@ -639,7 +670,11 @@ export default function Home() {
                   ? 'Espumantes'
                   : mobileDropdown==='bodegas'
                     ? 'Bodegas'
-                    : 'Categorías'}
+                    : mobileDropdown==='destilados'
+                      ? 'Destilados'
+                      : mobileDropdown==='delicatessen'
+                        ? 'Delicatessen'
+                        : 'Categorías'}
             </strong>
           </div>
           <button type="button" aria-label="Cerrar menú" onClick={()=>setMobileDropdown('')}>
@@ -687,6 +722,27 @@ export default function Home() {
               {label}
             </button>
           )}
+
+
+          {mobileDropdown==='destilados'&&Object.entries(distilledMenuGroups).map(([label,terms])=>
+            <button
+              key={label}
+              type="button"
+              onClick={()=>{openGroup(label,terms,'Destilados');setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {label}
+            </button>
+          )}
+
+          {mobileDropdown==='delicatessen'&&Object.entries(delicatessenMenuGroups).map(([label,terms])=>
+            <button
+              key={label}
+              type="button"
+              onClick={()=>{openGroup(label,terms,'Delicatessen');setMenuOpen(false);setMobileDropdown('')}}
+            >
+              {label}
+            </button>
+          )}
         </div>
       </aside>
     </>}
@@ -715,7 +771,7 @@ export default function Home() {
 
     <section id="bodegas" className="prestige-strip"><div className="prestige-inner"><div className="featured-section-title"><span/><h2>Bodegas destacadas</h2><span/></div><div className="winery-marks">{featuredWineries.length?featuredWineries.map(w=><article className="winery-mark" key={w.name}>{w.image?<Image className="winery-logo" src={w.image} alt={`Logo de ${w.name}`} width={142} height={54} sizes="142px"/>:<span className="winery-name-fallback">{w.name}</span>}</article>):<p className="public-empty-message">Las bodegas destacadas se administran desde el CRM.</p>}</div></div></section>
 
-    <section id="vinos" className="featured-wines-section"><div className="featured-section-title"><span/><h2>Vinos destacados</h2><span/></div>{catalogLoading?<p className="catalog-state">Cargando catálogo...</p>:<div className="featured-wines-grid">{featuredWines.map(w=><ProductCard key={w.id} wine={w}/>)}</div>}{catalogError&&<p className="catalog-warning">Se mostró un catálogo de respaldo porque Supabase respondió: {catalogError}</p>}</section>
+    <section id="vinos" className="featured-wines-section"><div className="featured-section-title"><span/><h2>Vinos destacados</h2><span/></div>{catalogLoading?<p className="catalog-state">Cargando catálogo...</p>:<div className="featured-wines-viewport"><div key={featuredStart} className="featured-wines-grid featured-wines-slide">{visibleFeaturedWines.map((w,index)=><ProductCard key={`${w.id}-${index}`} wine={w}/>)}</div></div>}{catalogError&&<p className="catalog-warning">Se mostró un catálogo de respaldo porque Supabase respondió: {catalogError}</p>}</section>
 
     <section
       id="catalogo"
@@ -756,18 +812,23 @@ export default function Home() {
     <section className="post-catalog-cta" aria-label="Categorías y servicios Dolce Vino">
       <div className="post-catalog-cta-shell">
         <div id="categorias" className="category-grid">
-          {categoryCards.map((card)=><a key={card.title} href={card.href} className="category-card">
+          {categoryCards.map((card)=><button
+            key={card.title}
+            type="button"
+            className="category-card"
+            onClick={()=>setMobileDropdown(card.drawer)}
+          >
             <div>
               <h3>{card.title}</h3>
               <span>{card.action} <ChevronRight size={12}/></span>
             </div>
-          </a>)}
+          </button>)}
         </div>
 
         <div className="cta-strip-grid">
-          <a href="/catalogo.pdf" download className="cta-strip-card cta-strip-card--catalog">
+          <button type="button" onClick={generateAndOpenCatalog} className="cta-strip-card cta-strip-card--catalog">
             <div className="cta-strip-book" aria-hidden="true">
-              <span>DOLCE VINO</span>
+              <Image src="/assets/logo_dolce_vino.png" alt="" width={76} height={76}/>
             </div>
             <div className="cta-strip-copy">
               <small>Descargá nuestro catálogo</small>
@@ -775,10 +836,10 @@ export default function Home() {
               <p>Una selección exclusiva, detallada para los verdaderos amantes del vino.</p>
             </div>
             <div className="cta-strip-action">
-              <span>Descargar catálogo</span>
+              <span>{catalogGenerating?'Generando…':'Descargar catálogo'}</span>
               <ChevronRight size={16}/>
             </div>
-          </a>
+          </button>
 
           <a href="https://wa.me/5490000000000" className="cta-strip-card cta-strip-card--whatsapp" target="_blank" rel="noreferrer">
             <div className="cta-strip-icon" aria-hidden="true"><MessageCircle size={34}/></div>
@@ -803,6 +864,38 @@ export default function Home() {
         </div>
       </div>
     </section>
+
+    <section className="location-section" aria-labelledby="location-title">
+      <div className="location-copy">
+        <span>Visitá Dolce Vino</span>
+        <h2 id="location-title">Nuestro local en Villa Nueva</h2>
+        <p><MapPin size={18}/> Carril Urquiza 368, Local 1-2, M5521 Villa Nueva, Mendoza</p>
+        <a href="https://maps.app.goo.gl/8BHyQjb7sPiX9yLq5" target="_blank" rel="noreferrer">
+          <Navigation size={17}/> Cómo llegar
+        </a>
+      </div>
+      <div className="location-map">
+        <iframe
+          title="Ubicación de Almacén Dolce Vino"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3349.706825858661!2d-68.7827767!3d-32.9059188!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e0e998fed3b51%3A0x6a7b4fff2b60b7e2!2sAlmac%C3%A9n%20Dolce%20Vino!5e0!3m2!1ses-419!2sar!4v1784847740089!5m2!1ses-419!2sar"
+          width="100%"
+          height="450"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      </div>
+    </section>
+
+    <footer className="site-footer">
+      <Image src="/assets/logo_dolce_vino.png" alt="Dolce Vino" width={92} height={92}/>
+      <div>
+        <strong>Dolce Vino</strong>
+        <span>Carril Urquiza 368, Local 1-2 · Villa Nueva, Mendoza</span>
+      </div>
+      <span>© {new Date().getFullYear()} Dolce Vino</span>
+    </footer>
 
     {modal&&<div className="catalog-modal-backdrop" onMouseDown={()=>setModal(null)}><section className="catalog-modal catalog-modal--compact" onMouseDown={e=>e.stopPropagation()}>
       <button className="modal-close" onClick={()=>setModal(null)}><X/></button>

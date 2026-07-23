@@ -1,0 +1,218 @@
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px;
+  border: 1px solid #dfe3da;
+  background: #f8faf5;
+}
+
+.toolbar h2,
+.toolbar p { margin: 0; }
+.toolbar h2 { font-size: 19px; }
+.toolbar p { margin-top: 5px; color: #697064; font-size: 13px; }
+
+.primaryButton {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  background: #c6d315;
+  color: #12140c;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.card { border: 1px solid #dfe3da; background: #fff; overflow: hidden; }
+.cardImage { height: 160px; display: grid; place-items: center; background: #f4f6f0; color: #747c6d; }
+.cardImage img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
+.cardBody { padding: 15px; }
+.cardBody h3 { margin: 8px 0 5px; font-size: 18px; }
+.cardBody p { min-height: 38px; margin: 0; color: #697064; font-size: 13px; line-height: 1.45; }
+.statusOn, .statusOff { display: inline-flex; padding: 4px 7px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.statusOn { background: #eef5cc; color: #4d5810; }
+.statusOff { background: #eceee9; color: #6d7369; }
+.cardMeta { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e5e8e1; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.cardMeta strong { font-size: 17px; }
+.cardMeta span { color: #697064; font-size: 12px; }
+.cardActions { padding: 10px; border-top: 1px solid #e5e8e1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.cardActions button { min-height: 36px; border: 1px solid #d6dbd1; background: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+.dangerButton { color: #9a3128 !important; }
+.emptyState { grid-column: 1 / -1; min-height: 280px; border: 1px dashed #cfd5c9; display: grid; place-items: center; align-content: center; text-align: center; color: #697064; }
+.emptyState h3 { margin: 12px 0 4px; color: #20251d; }
+.emptyState p { margin: 0; }
+
+.backdrop { position: fixed; inset: 0; z-index: 1000; padding: 20px; background: rgba(13,15,11,.72); display: grid; place-items: center; }
+.modal { width: min(1040px, 100%); max-height: calc(100vh - 40px); overflow: auto; background: #fff; box-shadow: 0 30px 80px rgba(0,0,0,.28); }
+.modalHeader { position: sticky; top: 0; z-index: 3; padding: 16px 18px; border-bottom: 1px solid #dfe3da; background: #fff; display: flex; justify-content: space-between; align-items: center; }
+.modalHeader span { color: #777f72; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+.modalHeader h2 { margin: 3px 0 0; }
+.modalHeader button { border: 0; background: transparent; cursor: pointer; }
+.formGrid { padding: 18px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.formGrid label { display: grid; gap: 6px; }
+.formGrid label > span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: #626a5e; }
+.formGrid input, .formGrid textarea { width: 100%; border: 1px solid #ccd2c7; padding: 11px 12px; font: inherit; }
+.formGrid textarea { min-height: 82px; resize: vertical; }
+.wideField { grid-column: 1 / -1; }
+.checkField { display: flex !important; grid-auto-flow: column; justify-content: start; align-items: center; }
+.checkField input { width: 18px; height: 18px; }
+.mixSummary { margin: 0 18px; padding: 14px; background: #f3f6df; display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.mixSummary div { display: grid; gap: 4px; }
+.mixSummary span { color: #666d60; font-size: 11px; }
+.mixSummary strong { font-size: 17px; }
+.productPicker { padding: 18px; }
+.pickerHeader { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 12px; }
+.pickerHeader h3, .pickerHeader p { margin: 0; }
+.pickerHeader p { margin-top: 4px; color: #697064; font-size: 12px; }
+.searchBox { min-width: 310px; min-height: 40px; padding: 0 11px; border: 1px solid #ccd2c7; display: flex; align-items: center; gap: 8px; }
+.searchBox input { width: 100%; border: 0; outline: 0; font: inherit; }
+.productList { max-height: 360px; overflow: auto; border: 1px solid #dfe3da; }
+.productRow { min-height: 64px; padding: 10px 12px; border-bottom: 1px solid #e7eae4; display: grid; grid-template-columns: minmax(0,1fr) 110px 105px; align-items: center; gap: 12px; }
+.productRow:last-child { border-bottom: 0; }
+.productSelected { background: #f8faeb; }
+.productRow > label:first-child { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.productRow > label:first-child input { width: 17px; height: 17px; }
+.productRow > label:first-child div { min-width: 0; display: grid; gap: 3px; }
+.productRow > label:first-child strong, .productRow > label:first-child span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.productRow > label:first-child span { color: #697064; font-size: 11px; }
+.quantityField { display: grid; gap: 3px; }
+.quantityField span { font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.quantityField input { width: 100%; border: 1px solid #ccd2c7; padding: 7px; }
+.modalFooter { position: sticky; bottom: 0; padding: 14px 18px; border-top: 1px solid #dfe3da; background: #fff; display: flex; justify-content: flex-end; gap: 10px; }
+.modalFooter > button:not(.primaryButton) { min-height: 42px; padding: 0 16px; border: 1px solid #ccd2c7; background: #fff; cursor: pointer; }
+
+@media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 720px) {
+  .toolbar, .pickerHeader { align-items: stretch; flex-direction: column; }
+  .grid { grid-template-columns: 1fr; }
+  .formGrid, .mixSummary { grid-template-columns: 1fr; }
+  .wideField { grid-column: auto; }
+  .searchBox { min-width: 0; }
+  .productRow { grid-template-columns: minmax(0,1fr) 90px; }
+  .quantityField { grid-column: 1 / -1; }
+  .cardActions { grid-template-columns: 1fr; }
+}
+
+
+.currencyInput {
+  min-height: 46px;
+  border: 1px solid #ccd2c7;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+}
+
+.currencyInput > span {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #dfe3da;
+  color: #30362b;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.currencyInput input {
+  height: 44px;
+  border: 0 !important;
+  outline: 0;
+  padding: 0 12px !important;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.imageUploadField {
+  display: grid;
+  gap: 7px;
+}
+
+.fieldLabel {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: #626a5e;
+}
+
+.dropzone {
+  min-height: 210px;
+  border: 1px dashed #aeb6aa;
+  background: #f7f8f4;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.dropzoneActive {
+  border-color: #b8c51b;
+  background: #f3f7d8;
+}
+
+.dropzone img {
+  width: 100%;
+  height: 210px;
+  object-fit: contain;
+  padding: 12px;
+}
+
+.dropzoneEmpty {
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  text-align: center;
+  color: #697064;
+}
+
+.dropzoneEmpty strong {
+  color: #252a21;
+}
+
+.dropzoneEmpty small {
+  font-size: 11px;
+}
+
+.imageActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.secondaryButton,
+.removeImageButton {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #ccd2c7;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.removeImageButton {
+  color: #9a3128;
+}
+
+@media (max-width: 720px) {
+  .imageActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

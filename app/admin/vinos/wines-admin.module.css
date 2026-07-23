@@ -133,9 +133,29 @@
 
 .filtersGrid {
   display: grid;
-  grid-template-columns: minmax(260px, 1.35fr) repeat(3, minmax(145px, 0.85fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 14px;
   align-items: end;
+}
+
+.searchField {
+  grid-column: span 3;
+}
+
+.filtersGrid > .field:not(.searchField):not(.varietalField):not(.imageField):not(.unitsField) {
+  grid-column: span 3;
+}
+
+.varietalField {
+  grid-column: span 3;
+}
+
+.imageField {
+  grid-column: span 6;
+}
+
+.unitsField {
+  grid-column: span 3;
 }
 
 .field {
@@ -202,10 +222,6 @@
   font: inherit;
 }
 
-.imageField {
-  grid-column: span 2;
-}
-
 .imageOptions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -222,6 +238,7 @@
   gap: 9px;
   cursor: pointer;
   white-space: nowrap;
+  overflow: visible;
 }
 
 .imageOptions label input {
@@ -700,6 +717,24 @@
   padding-top: 18px;
   margin-top: 18px;
   border-top: 1px solid var(--line);
+}
+
+
+@media (max-width: 1350px) {
+  .filtersGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .searchField,
+  .filtersGrid > .field:not(.searchField):not(.varietalField):not(.imageField):not(.unitsField),
+  .varietalField,
+  .unitsField {
+    grid-column: span 3;
+  }
+
+  .imageField {
+    grid-column: span 6;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -1219,4 +1254,234 @@
 @media (max-width: 900px) {
   .bulkBar { align-items: stretch; flex-direction: column; }
   .bulkActions { justify-content: flex-start; }
+}
+
+
+/* Distribución final de filtros: estas reglas prevalecen sobre estilos anteriores. */
+.filtersGrid {
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+}
+
+.searchField {
+  grid-column: span 3 !important;
+}
+
+.filtersGrid > .field:not(.searchField):not(.varietalField):not(.imageField):not(.unitsField) {
+  grid-column: span 3 !important;
+}
+
+.varietalField {
+  grid-column: span 3 !important;
+}
+
+.imageField {
+  grid-column: span 6 !important;
+  min-width: 0;
+}
+
+.unitsField {
+  grid-column: span 3 !important;
+}
+
+.imageOptions {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(150px, 1fr)) !important;
+}
+
+.imageOptions label {
+  min-width: 0;
+  width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+@media (max-width: 1350px) {
+  .filtersGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+
+  .searchField,
+  .filtersGrid > .field:not(.searchField):not(.varietalField):not(.imageField):not(.unitsField),
+  .varietalField,
+  .unitsField {
+    grid-column: span 3 !important;
+  }
+
+  .imageField {
+    grid-column: 1 / -1 !important;
+  }
+
+  .imageOptions {
+    grid-template-columns: repeat(2, minmax(180px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .filtersGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .searchField,
+  .filtersGrid > .field:not(.searchField):not(.varietalField):not(.imageField):not(.unitsField),
+  .varietalField,
+  .unitsField {
+    grid-column: span 1 !important;
+  }
+
+  .imageField {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .filtersGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .searchField,
+  .filtersGrid > .field,
+  .varietalField,
+  .imageField,
+  .unitsField {
+    grid-column: auto !important;
+  }
+
+  .imageOptions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* Filtros compactos: 4 filas visuales */
+.filtersPanel {
+  padding: 14px 16px !important;
+}
+
+.filtersHeader {
+  padding-bottom: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.filtersTitle h3 {
+  font-size: 15px !important;
+}
+
+.filtersTitle p {
+  font-size: 11px !important;
+}
+
+.filtersGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px 12px !important;
+}
+
+.searchField,
+.filtersGrid > .field:not(.searchField):not(.varietalField):not(.imageField):not(.unitsField),
+.varietalField,
+.imageField,
+.unitsField {
+  grid-column: span 1 !important;
+}
+
+.field {
+  gap: 5px !important;
+}
+
+.field > span {
+  font-size: 9px !important;
+}
+
+.field select,
+.field input[type='number'],
+.searchControl,
+.imageOptions label {
+  min-height: 38px !important;
+}
+
+.searchControl input {
+  height: 36px !important;
+}
+
+.imageOptions {
+  width: auto !important;
+  display: flex !important;
+  gap: 14px !important;
+  align-items: center !important;
+}
+
+.imageOptions label {
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  display: inline-flex !important;
+  gap: 7px !important;
+}
+
+.imageOptions label input {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.optionActive {
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+@media (max-width: 1180px) {
+  .filtersGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .searchField,
+  .filtersGrid > .field,
+  .varietalField,
+  .imageField,
+  .unitsField {
+    grid-column: span 1 !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .filtersGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .imageOptions {
+    gap: 20px !important;
+  }
+}
+
+
+.currencyInput {
+  min-height: 44px;
+  border: 1px solid #ccd2c7;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+}
+
+.currencyInput > span {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #dfe3da;
+  color: #30362b;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.currencyInput input {
+  width: 100%;
+  height: 42px;
+  border: 0 !important;
+  outline: 0;
+  padding: 0 12px !important;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
 }

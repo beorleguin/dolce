@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } fro
 import {
   Check,
   ChevronDown,
-  DollarSign,
   Download,
   Image as ImageIcon,
   ImagePlus,
@@ -41,14 +40,16 @@ type Product = {
   image_path: string | null;
   image_pending: boolean;
   category_id: string | null;
+  brand_id: string | null;
   winery_id: string | null;
   varietal_id: string | null;
   categories?: RelationName;
+  brands?: RelationName;
   wineries?: RelationName;
   varietals?: RelationName;
 };
 
-type ProductDraft = Omit<Product, 'categories' | 'wineries' | 'varietals'>;
+type ProductDraft = Omit<Product, 'categories' | 'brands' | 'wineries' | 'varietals' | 'price'> & { price: string };
 type Option = { id: string; name: string };
 
 
@@ -118,7 +119,7 @@ const EMPTY_PRODUCT: ProductDraft = {
   article_name: '',
   description: '',
   sku: '',
-  price: 0,
+  price: '',
   units_per_box: 6,
   enabled: true,
   featured: false,
@@ -126,6 +127,7 @@ const EMPTY_PRODUCT: ProductDraft = {
   image_path: '',
   image_pending: true,
   category_id: '',
+  brand_id: '',
   winery_id: '',
   varietal_id: '',
 };
@@ -171,23 +173,38 @@ function formatPrice(value: number) {
   })}`;
 }
 
+function parsePriceInput(value: string) {
+  const cleaned = value.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.');
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatPriceInput(value: string | number) {
+  const parsed = typeof value === 'number' ? value : parsePriceInput(value);
+  if (!parsed && String(value).trim() === '') return '';
+  return parsed.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export default function WinesAdminPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [brands, setBrands] = useState<Option[]>([]);
   const [wineries, setWineries] = useState<Option[]>([]);
   const [varietals, setVarietals] = useState<Option[]>([]);
   const [categories, setCategories] = useState<Option[]>([]);
 
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [brandId, setBrandId] = useState('');
   const [wineryId, setWineryId] = useState('');
   const [varietalId, setVarietalId] = useState('');
   const [withImage, setWithImage] = useState(false);
   const [withoutImage, setWithoutImage] = useState(false);
   const [unitsFilter, setUnitsFilter] = useState('');
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
 
   const [page, setPage] = useState(0);
   const [count, setCount] = useState(0);
@@ -205,13 +222,12 @@ export default function WinesAdminPage() {
   const hasFilters = Boolean(
     query ||
       categoryId ||
+      brandId ||
       wineryId ||
       varietalId ||
       withImage ||
       withoutImage ||
-      unitsFilter ||
-      priceMin ||
-      priceMax,
+      unitsFilter
   );
 
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
@@ -222,7 +238,7 @@ export default function WinesAdminPage() {
   const loadProducts = useCallback(async () => {
     let request = supabase
       .from('products')
-      .select('*,categories(name),wineries(name),varietals(name)', { count: 'exact' })
+      .select('*,categories(name),brands(name),wineries(name),varietals(name)', { count: 'exact' })
       .order('name')
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
@@ -231,13 +247,12 @@ export default function WinesAdminPage() {
       request = request.or(`name.ilike.%${term}%,article_name.ilike.%${term}%,sku.ilike.%${term}%`);
     }
     if (categoryId) request = request.eq('category_id', categoryId);
+    if (brandId) request = request.eq('brand_id', brandId);
     if (wineryId) request = request.eq('winery_id', wineryId);
     if (varietalId) request = request.eq('varietal_id', varietalId);
     if (withImage && !withoutImage) request = request.eq('image_pending', false);
     if (withoutImage && !withImage) request = request.eq('image_pending', true);
     if (unitsFilter) request = request.eq('units_per_box', Number(unitsFilter));
-    if (priceMin !== '') request = request.gte('price', Number(priceMin));
-    if (priceMax !== '') request = request.lte('price', Number(priceMax));
 
     const { data, count: total, error } = await request;
     if (error) {
@@ -252,21 +267,22 @@ export default function WinesAdminPage() {
     page,
     query,
     categoryId,
+    brandId,
     wineryId,
     varietalId,
     withImage,
     withoutImage,
     unitsFilter,
-    priceMin,
-    priceMax,
   ]);
 
   useEffect(() => {
     Promise.all([
+      supabase.from('brands').select('id,name').order('name'),
       supabase.from('wineries').select('id,name').order('name'),
       supabase.from('varietals').select('id,name').order('name'),
       supabase.from('categories').select('id,name').order('name'),
-    ]).then(([wineriesResult, varietalsResult, categoriesResult]) => {
+    ]).then(([brandsResult, wineriesResult, varietalsResult, categoriesResult]) => {
+      setBrands(brandsResult.data || []);
       setWineries(wineriesResult.data || []);
       setVarietals(varietalsResult.data || []);
       setCategories(categoriesResult.data || []);
@@ -286,7 +302,7 @@ export default function WinesAdminPage() {
       if (error) alert(error.message);
       else if (data) {
         setUnitsManual(false);
-        setDraft(data as ProductDraft);
+        setDraft({ ...(data as Product), price: formatPriceInput(Number(data.price) || 0) });
       }
     })();
   }, [supabase]);
@@ -294,13 +310,12 @@ export default function WinesAdminPage() {
   function clearFilters() {
     setQuery('');
     setCategoryId('');
+    setBrandId('');
     setWineryId('');
     setVarietalId('');
     setWithImage(false);
     setWithoutImage(false);
     setUnitsFilter('');
-    setPriceMin('');
-    setPriceMax('');
     setPage(0);
   }
 
@@ -317,7 +332,7 @@ export default function WinesAdminPage() {
       article_name: product.article_name,
       description: product.description,
       sku: product.sku,
-      price: product.price,
+      price: formatPriceInput(product.price),
       units_per_box: isSingleUnitProduct(
         product.categories?.name,
         product.article_name,
@@ -335,6 +350,7 @@ export default function WinesAdminPage() {
       image_path: product.image_path,
       image_pending: product.image_pending,
       category_id: product.category_id,
+      brand_id: product.brand_id,
       winery_id: product.winery_id,
       varietal_id: product.varietal_id,
     });
@@ -376,7 +392,7 @@ export default function WinesAdminPage() {
       article_name: draft.article_name?.trim() || draft.name.trim(),
       description: draft.description?.trim() || null,
       sku: draft.sku?.trim() || null,
-      price: Number(draft.price) || 0,
+      price: parsePriceInput(draft.price),
       stock: 0,
       units_per_box: isSingleUnitProduct(
         categories.find((category) => category.id === draft.category_id)?.name,
@@ -825,13 +841,12 @@ export default function WinesAdminPage() {
           request = request.or(`name.ilike.%${term}%,article_name.ilike.%${term}%,sku.ilike.%${term}%`);
         }
         if (categoryId) request = request.eq('category_id', categoryId);
+        if (brandId) request = request.eq('brand_id', brandId);
         if (wineryId) request = request.eq('winery_id', wineryId);
         if (varietalId) request = request.eq('varietal_id', varietalId);
         if (withImage && !withoutImage) request = request.eq('image_pending', false);
         if (withoutImage && !withImage) request = request.eq('image_pending', true);
         if (unitsFilter) request = request.eq('units_per_box', Number(unitsFilter));
-        if (priceMin !== '') request = request.gte('price', Number(priceMin));
-        if (priceMax !== '') request = request.lte('price', Number(priceMax));
 
         const { data, error } = await request;
         if (error) throw error;
@@ -952,13 +967,12 @@ export default function WinesAdminPage() {
           );
         }
         if (categoryId) request = request.eq('category_id', categoryId);
+        if (brandId) request = request.eq('brand_id', brandId);
         if (wineryId) request = request.eq('winery_id', wineryId);
         if (varietalId) request = request.eq('varietal_id', varietalId);
         if (withImage && !withoutImage) request = request.eq('image_pending', false);
         if (withoutImage && !withImage) request = request.eq('image_pending', true);
         if (unitsFilter) request = request.eq('units_per_box', Number(unitsFilter));
-        if (priceMin !== '') request = request.gte('price', Number(priceMin));
-        if (priceMax !== '') request = request.lte('price', Number(priceMax));
 
         const { data, error } = await request;
         if (error) throw error;
@@ -979,6 +993,7 @@ export default function WinesAdminPage() {
         Descripción: product.description || '',
         Código: product.sku || '',
         Categoría: product.categories?.name || '',
+        Marca: product.brands?.name || '',
         Bodega: product.wineries?.name || '',
         Varietal: product.varietals?.name || '',
         Imagen: product.image_url && !product.image_pending ? 'SI' : 'NO',
@@ -1092,6 +1107,19 @@ export default function WinesAdminPage() {
               </div>
 
               <div className={styles.field}>
+                <span>Marca</span>
+                <CompactSelect
+                  ariaLabel="Filtrar por marca"
+                  value={brandId}
+                  options={[{ value: '', label: 'Todas' }, ...brands.map((option) => ({ value: option.id, label: option.name }))]}
+                  onChange={(value) => {
+                    setPage(0);
+                    setBrandId(value);
+                  }}
+                />
+              </div>
+
+              <div className={styles.field}>
                 <span>Bodega</span>
                 <CompactSelect
                   ariaLabel="Filtrar por bodega"
@@ -1104,7 +1132,7 @@ export default function WinesAdminPage() {
                 />
               </div>
 
-              <div className={styles.field}>
+              <div className={`${styles.field} ${styles.varietalField}`}>
                 <span>Varietal</span>
                 <CompactSelect
                   ariaLabel="Filtrar por varietal"
@@ -1147,7 +1175,7 @@ export default function WinesAdminPage() {
                 </div>
               </div>
 
-              <div className={styles.field}>
+              <div className={`${styles.field} ${styles.unitsField}`}>
                 <span>
                   <Package size={14} /> Unidades
                 </span>
@@ -1162,41 +1190,6 @@ export default function WinesAdminPage() {
                 />
               </div>
 
-              <div className={`${styles.field} ${styles.priceField}`}>
-                <span>
-                  <DollarSign size={14} /> Rango de precio
-                </span>
-                <div className={styles.priceInputs}>
-                  <label>
-                    <small>Desde</small>
-                    <input
-                      type="number"
-                      min="0"
-                      step="100"
-                      value={priceMin}
-                      placeholder="$ 0"
-                      onChange={(event) => {
-                        setPage(0);
-                        setPriceMin(event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label>
-                    <small>Hasta</small>
-                    <input
-                      type="number"
-                      min="0"
-                      step="100"
-                      value={priceMax}
-                      placeholder="Sin límite"
-                      onChange={(event) => {
-                        setPage(0);
-                        setPriceMax(event.target.value);
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -1490,13 +1483,23 @@ export default function WinesAdminPage() {
 
                 <label>
                   <span>Precio de venta</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={draft.price || 0}
-                    onChange={(event) => setDraft({ ...draft, price: Number(event.target.value) })}
-                  />
+                  <div className={styles.currencyInput}>
+                    <span>$</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={draft.price}
+                      placeholder="0,00"
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        if (/^[0-9.,]*$/.test(value)) {
+                          setDraft({ ...draft, price: value });
+                        }
+                      }}
+                      onBlur={() => setDraft({ ...draft, price: formatPriceInput(draft.price) })}
+                      onFocus={(event) => event.currentTarget.select()}
+                    />
+                  </div>
                 </label>
 
                 <label>
@@ -1556,6 +1559,21 @@ export default function WinesAdminPage() {
                   >
                     <option value="">Sin categoría</option>
                     {categories.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Marca</span>
+                  <select
+                    value={draft.brand_id || ''}
+                    onChange={(event) => setDraft({ ...draft, brand_id: event.target.value })}
+                  >
+                    <option value="">Sin marca</option>
+                    {brands.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
