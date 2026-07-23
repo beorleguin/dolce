@@ -10,10 +10,11 @@ import {
   rgb,
 } from 'pdf-lib';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { requireAdmin } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
@@ -552,10 +553,6 @@ function addCategoryProducts(
 }
 
 export async function POST() {
-  if (!(await requireAdmin())) {
-    return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
-  }
-
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -638,16 +635,33 @@ export async function POST() {
       },
     });
 
-    return NextResponse.json({
-      url,
-      products: products.length,
-      pages: pdf.getPageCount(),
-    });
+    return NextResponse.json(
+      {
+        url,
+        products: products.length,
+        pages: pdf.getPageCount(),
+        generatedAt: new Date().toISOString(),
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      },
+    );
   } catch (error: any) {
     console.error('Catalog PDF generation failed:', error);
     return NextResponse.json(
       { error: error?.message || 'Error generando PDF' },
-      { status: 500 },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      },
     );
   }
 }
