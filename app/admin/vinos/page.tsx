@@ -11,10 +11,12 @@ import {
   Eye,
   EyeOff,
   Package,
+  Percent,
   Pencil,
   RotateCcw,
   Search,
   SlidersHorizontal,
+  ListChecks,
   Trash2,
   UploadCloud,
   X,
@@ -137,9 +139,14 @@ function normalizePackageText(value: string) {
     .trim();
 }
 
+function isSingleUnitProduct(...values: Array<string | null | undefined>) {
+  const text = normalizePackageText(values.filter(Boolean).join(' '));
+  return /\bestuche\b|\bdestilados?\b|\bwhisk(?:y|ies)\b|\bwhiskey\b|\bron\b|\bginebra\b|\bgin\b/.test(text);
+}
+
 function inferUnitsPerBox(...values: Array<string | null | undefined>) {
   const text = normalizePackageText(values.filter(Boolean).join(' '));
-  if (/\bestuche\b/.test(text)) return 1;
+  if (isSingleUnitProduct(text)) return 1;
 
   const patterns = [
     /\b(?:caja|pack|mix|set)\s*(?:de\s*)?x?\s*(\d{1,2})\b/,
@@ -189,6 +196,11 @@ export default function WinesAdminPage() {
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [draggingImage, setDraggingImage] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [priceModalOpen, setPriceModalOpen] = useState(false);
+  const [pricePercentage, setPricePercentage] = useState('');
+  const [priceRoundTo, setPriceRoundTo] = useState('100');
 
   const hasFilters = Boolean(
     query ||
@@ -203,6 +215,9 @@ export default function WinesAdminPage() {
   );
 
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const currentPageIds = products.map((product) => product.id);
+  const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedSet.has(id));
 
   const loadProducts = useCallback(async () => {
     let request = supabase
@@ -303,10 +318,17 @@ export default function WinesAdminPage() {
       description: product.description,
       sku: product.sku,
       price: product.price,
-      units_per_box: Math.max(
-        1,
-        Number(product.units_per_box) || inferUnitsPerBox(product.article_name, product.name),
-      ),
+      units_per_box: isSingleUnitProduct(
+        product.categories?.name,
+        product.article_name,
+        product.name,
+      )
+        ? 1
+        : Math.max(
+            1,
+            Number(product.units_per_box) ||
+              inferUnitsPerBox(product.categories?.name, product.article_name, product.name),
+          ),
       enabled: product.enabled,
       featured: product.featured,
       image_url: product.image_url,
@@ -356,10 +378,16 @@ export default function WinesAdminPage() {
       sku: draft.sku?.trim() || null,
       price: Number(draft.price) || 0,
       stock: 0,
-      units_per_box: Math.max(
-        1,
-        Number(draft.units_per_box) || inferUnitsPerBox(draft.article_name, draft.name),
-      ),
+      units_per_box: isSingleUnitProduct(
+        categories.find((category) => category.id === draft.category_id)?.name,
+        draft.article_name,
+        draft.name,
+      )
+        ? 1
+        : Math.max(
+            1,
+            Number(draft.units_per_box) || inferUnitsPerBox(draft.article_name, draft.name),
+          ),
       enabled: Boolean(draft.enabled),
       featured: Boolean(draft.featured),
       winery_id: draft.winery_id || null,
@@ -759,6 +787,151 @@ export default function WinesAdminPage() {
   }
 
 
+  function toggleSelectedProduct(id: string) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
+  }
+
+  function toggleCurrentPageSelection() {
+    setSelectedIds((current) => {
+      const currentSet = new Set(current);
+
+      if (allCurrentPageSelected) {
+        currentPageIds.forEach((id) => currentSet.delete(id));
+      } else {
+        currentPageIds.forEach((id) => currentSet.add(id));
+      }
+
+      return Array.from(currentSet);
+    });
+  }
+
+  async function selectAllFilteredProducts() {
+    setBulkBusy(true);
+    try {
+      const ids: string[] = [];
+      const batchSize = 700;
+
+      for (let from = 0; ; from += batchSize) {
+        let request: any = supabase
+          .from('products')
+          .select('id')
+          .order('name')
+          .range(from, from + batchSize - 1);
+
+        if (query.trim()) {
+          const term = query.trim().replace(/,/g, ' ');
+          request = request.or(`name.ilike.%${term}%,article_name.ilike.%${term}%,sku.ilike.%${term}%`);
+        }
+        if (categoryId) request = request.eq('category_id', categoryId);
+        if (wineryId) request = request.eq('winery_id', wineryId);
+        if (varietalId) request = request.eq('varietal_id', varietalId);
+        if (withImage && !withoutImage) request = request.eq('image_pending', false);
+        if (withoutImage && !withImage) request = request.eq('image_pending', true);
+        if (unitsFilter) request = request.eq('units_per_box', Number(unitsFilter));
+        if (priceMin !== '') request = request.gte('price', Number(priceMin));
+        if (priceMax !== '') request = request.lte('price', Number(priceMax));
+
+        const { data, error } = await request;
+        if (error) throw error;
+
+        const batch = (data || []).map((row: { id: string }) => row.id);
+        ids.push(...batch);
+        if (batch.length < batchSize) break;
+      }
+
+      setSelectedIds(ids);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudieron seleccionar los productos.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function updateSelectedVisibility(enabled: boolean) {
+    if (!selectedIds.length) return;
+    setBulkBusy(true);
+
+    try {
+      for (let index = 0; index < selectedIds.length; index += 200) {
+        const batch = selectedIds.slice(index, index + 200);
+        const { error } = await supabase.from('products').update({ enabled }).in('id', batch);
+        if (error) throw error;
+      }
+
+      setProducts((current) =>
+        current.map((product) =>
+          selectedSet.has(product.id) ? { ...product, enabled } : product,
+        ),
+      );
+      await fetch('/api/catalog/generate', { method: 'POST' });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo actualizar la visibilidad.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function deleteSelectedProducts() {
+    if (!selectedIds.length) return;
+    if (!confirm(`¿Eliminar definitivamente ${selectedIds.length} productos seleccionados?`)) return;
+
+    setBulkBusy(true);
+    try {
+      for (let index = 0; index < selectedIds.length; index += 200) {
+        const batch = selectedIds.slice(index, index + 200);
+        const { error } = await supabase.from('products').delete().in('id', batch);
+        if (error) throw error;
+      }
+
+      setSelectedIds([]);
+      await fetch('/api/catalog/generate', { method: 'POST' });
+      await loadProducts();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudieron eliminar los productos.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function increaseSelectedPrices() {
+    const percentage = Number(pricePercentage);
+    const roundTo = Math.max(0, Number(priceRoundTo) || 0);
+
+    if (!selectedIds.length) return;
+    if (!Number.isFinite(percentage) || percentage <= 0) {
+      alert('Ingresá un porcentaje mayor a cero.');
+      return;
+    }
+
+    if (!confirm(`¿Aumentar ${percentage}% el precio de ${selectedIds.length} productos?`)) return;
+
+    setBulkBusy(true);
+    try {
+      const { error } = await supabase.rpc('bulk_increase_product_prices', {
+        product_ids: selectedIds,
+        percentage,
+        round_to: roundTo,
+      });
+
+      if (error) throw error;
+
+      setPriceModalOpen(false);
+      setPricePercentage('');
+      await fetch('/api/catalog/generate', { method: 'POST' });
+      await loadProducts();
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo aplicar el aumento. Ejecutá primero la migración SQL incluida.',
+      );
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   async function exportFilteredProducts() {
     setExporting(true);
     try {
@@ -1027,10 +1200,54 @@ export default function WinesAdminPage() {
             </div>
           </section>
 
+          <section className={styles.bulkBar} aria-label="Acciones masivas">
+            <div className={styles.bulkSummary}>
+              <ListChecks size={18} />
+              <div>
+                <strong>{selectedIds.length} seleccionados</strong>
+                <span>Podés seleccionar la página actual o todos los resultados filtrados.</span>
+              </div>
+            </div>
+
+            <div className={styles.bulkActions}>
+              <button type="button" onClick={toggleCurrentPageSelection} disabled={!products.length || bulkBusy}>
+                {allCurrentPageSelected ? 'Quitar página' : 'Seleccionar página'}
+              </button>
+              <button type="button" onClick={() => void selectAllFilteredProducts()} disabled={!count || bulkBusy}>
+                Seleccionar filtrados ({count})
+              </button>
+              <button type="button" onClick={() => void updateSelectedVisibility(true)} disabled={!selectedIds.length || bulkBusy}>
+                <Eye size={15} /> Mostrar
+              </button>
+              <button type="button" onClick={() => void updateSelectedVisibility(false)} disabled={!selectedIds.length || bulkBusy}>
+                <EyeOff size={15} /> Ocultar
+              </button>
+              <button type="button" onClick={() => setPriceModalOpen(true)} disabled={!selectedIds.length || bulkBusy}>
+                <Percent size={15} /> Aumentar precio
+              </button>
+              <button type="button" className={styles.bulkDanger} onClick={() => void deleteSelectedProducts()} disabled={!selectedIds.length || bulkBusy}>
+                <Trash2 size={15} /> Eliminar
+              </button>
+              {selectedIds.length > 0 && (
+                <button type="button" onClick={() => setSelectedIds([])} disabled={bulkBusy}>
+                  Limpiar selección
+                </button>
+              )}
+            </div>
+          </section>
+
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th className={styles.selectColumn}>
+                    <input
+                      type="checkbox"
+                      checked={allCurrentPageSelected}
+                      onChange={toggleCurrentPageSelection}
+                      aria-label="Seleccionar productos de esta página"
+                    />
+                  </th>
                   <th>Imagen</th>
                   <th>Marca / producto</th>
                   <th>Categoría</th>
@@ -1044,7 +1261,15 @@ export default function WinesAdminPage() {
               </thead>
               <tbody>
                 {products.map((product) => (
-                  <tr key={product.id}>
+                  <tr key={product.id} className={selectedSet.has(product.id) ? styles.selectedRow : ''}>
+                    <td className={styles.selectColumn}>
+                      <input
+                        type="checkbox"
+                        checked={selectedSet.has(product.id)}
+                        onChange={() => toggleSelectedProduct(product.id)}
+                        aria-label={`Seleccionar ${product.article_name || product.name}`}
+                      />
+                    </td>
                     <td>
                       {product.image_url ? (
                         <img
@@ -1070,11 +1295,17 @@ export default function WinesAdminPage() {
                     <td className={styles.priceCell}>{formatPrice(product.price)}</td>
                     <td className={styles.unitsCell}>
                       x
-                      {Math.max(
-                        1,
-                        Number(product.units_per_box) ||
-                          inferUnitsPerBox(product.article_name, product.name),
-                      )}
+                      {isSingleUnitProduct(
+                        product.categories?.name,
+                        product.article_name,
+                        product.name,
+                      )
+                        ? 1
+                        : Math.max(
+                            1,
+                            Number(product.units_per_box) ||
+                              inferUnitsPerBox(product.article_name, product.name),
+                          )}
                     </td>
                     <td>
                       <div className={styles.visibilityCell}>
@@ -1132,6 +1363,54 @@ export default function WinesAdminPage() {
             </button>
           </footer>
         </section>
+
+        {priceModalOpen && (
+          <div className={styles.modalBackdrop} role="presentation">
+            <section className={`${styles.modal} ${styles.priceModal}`} role="dialog" aria-modal="true">
+              <header className={styles.modalHeader}>
+                <div>
+                  <span>Acción masiva</span>
+                  <h2>Aumentar precios</h2>
+                </div>
+                <button type="button" onClick={() => setPriceModalOpen(false)} aria-label="Cerrar">
+                  <X size={20} />
+                </button>
+              </header>
+
+              <div className={styles.priceBulkForm}>
+                <p>Se actualizarán <strong>{selectedIds.length} productos</strong>.</p>
+                <label>
+                  <span>Porcentaje de aumento</span>
+                  <div className={styles.percentageInput}>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={pricePercentage}
+                      onChange={(event) => setPricePercentage(event.target.value)}
+                      placeholder="Ejemplo: 10"
+                    />
+                    <strong>%</strong>
+                  </div>
+                </label>
+                <label>
+                  <span>Redondear al múltiplo de</span>
+                  <select value={priceRoundTo} onChange={(event) => setPriceRoundTo(event.target.value)}>
+                    <option value="0">Sin redondeo</option>
+                    <option value="10">$ 10</option>
+                    <option value="100">$ 100</option>
+                    <option value="500">$ 500</option>
+                    <option value="1000">$ 1.000</option>
+                  </select>
+                </label>
+                <small>Ejemplo: $ 29.000 con aumento del 10% y redondeo a $100 queda en $ 31.900.</small>
+                <button type="button" className={styles.primaryButton} onClick={() => void increaseSelectedPrices()} disabled={bulkBusy}>
+                  <Percent size={16} /> {bulkBusy ? 'Aplicando...' : 'Aplicar aumento'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
 
         {draft && (
           <div className={styles.modalBackdrop} role="presentation">
@@ -1226,7 +1505,20 @@ export default function WinesAdminPage() {
                     type="number"
                     min="1"
                     max="99"
-                    value={draft.units_per_box || 1}
+                    value={
+                      isSingleUnitProduct(
+                        categories.find((category) => category.id === draft.category_id)?.name,
+                        draft.article_name,
+                        draft.name,
+                      )
+                        ? 1
+                        : draft.units_per_box || 1
+                    }
+                    disabled={isSingleUnitProduct(
+                      categories.find((category) => category.id === draft.category_id)?.name,
+                      draft.article_name,
+                      draft.name,
+                    )}
                     onChange={(event) => {
                       setUnitsManual(true);
                       setDraft({
@@ -1236,7 +1528,7 @@ export default function WinesAdminPage() {
                     }}
                   />
                   <small>
-                    Se detecta automáticamente, pero es editable. Todo ESTUCHE se contabiliza como x1.
+                    Se detecta automáticamente, pero es editable. Estuches, destilados, whisky, ron y ginebra se contabilizan siempre como x1.
                   </small>
                 </label>
 
@@ -1244,7 +1536,23 @@ export default function WinesAdminPage() {
                   <span>Categoría</span>
                   <select
                     value={draft.category_id || ''}
-                    onChange={(event) => setDraft({ ...draft, category_id: event.target.value })}
+                    onChange={(event) => {
+                      const nextCategoryId = event.target.value;
+                      const nextCategoryName = categories.find((option) => option.id === nextCategoryId)?.name;
+                      const forceSingleUnit = isSingleUnitProduct(
+                        nextCategoryName,
+                        draft.article_name,
+                        draft.name,
+                      );
+
+                      setDraft({
+                        ...draft,
+                        category_id: nextCategoryId,
+                        units_per_box: forceSingleUnit ? 1 : draft.units_per_box,
+                      });
+
+                      if (forceSingleUnit) setUnitsManual(false);
+                    }}
                   >
                     <option value="">Sin categoría</option>
                     {categories.map((option) => (

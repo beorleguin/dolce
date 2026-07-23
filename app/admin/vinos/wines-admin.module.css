@@ -1120,3 +1120,103 @@
   height:30px!important;
   overflow:visible!important;
 }
+
+
+/* ===== Bloque A: selección y acciones masivas ===== */
+.bulkBar {
+  padding: 14px;
+  border: 1px solid #d7dcd2;
+  background: #f7f8f4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bulkSummary {
+  min-width: 230px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bulkSummary > svg { color: #68705f; }
+.bulkSummary strong,
+.bulkSummary span { display: block; }
+.bulkSummary strong { font-size: 13px; }
+.bulkSummary span { margin-top: 2px; color: #747a70; font-size: 10px; }
+
+.bulkActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bulkActions button {
+  min-height: 35px;
+  padding: 0 10px;
+  border: 1px solid #cfd4ca;
+  background: #fff;
+  color: #353b31;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.bulkActions button:hover:not(:disabled) {
+  border-color: #b9c71d;
+  background: #f4f7dd;
+}
+
+.bulkActions button:disabled { opacity: .45; cursor: not-allowed; }
+.bulkActions .bulkDanger { color: #8e3030; border-color: #ddbaba; }
+
+.selectColumn {
+  width: 38px !important;
+  min-width: 38px !important;
+  text-align: center !important;
+}
+
+.selectColumn input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.selectedRow td { background: #f4f7dd !important; }
+
+/* La tabla ahora tiene una columna adicional de selección. */
+.table th:nth-child(1), .table td:nth-child(1) { width: 38px !important; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 54px !important; }
+.table th:nth-child(3), .table td:nth-child(3) { width: 24% !important; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 9% !important; }
+.table th:nth-child(5), .table td:nth-child(5) { width: 12% !important; }
+.table th:nth-child(6), .table td:nth-child(6) { width: 10% !important; }
+.table th:nth-child(7), .table td:nth-child(7) { width: 8% !important; }
+.table th:nth-child(8), .table td:nth-child(8) { width: 5% !important; text-align: center !important; }
+.table th:nth-child(9), .table td:nth-child(9) { width: 48px !important; text-align: center !important; }
+.table th:nth-child(10), .table td:nth-child(10) { width: 74px !important; min-width: 74px !important; }
+
+.priceModal { width: min(520px, 94vw); }
+.priceBulkForm { display: grid; gap: 15px; }
+.priceBulkForm p { margin: 0; color: #5f665b; }
+.priceBulkForm label { display: grid; gap: 6px; color: #62695e; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.priceBulkForm input,
+.priceBulkForm select { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #cfd3ca; background: #fff; font: inherit; }
+.priceBulkForm small { color: #7a8176; line-height: 1.5; }
+.percentageInput { display: grid; grid-template-columns: 1fr 48px; }
+.percentageInput strong { display: grid; place-items: center; border: 1px solid #cfd3ca; border-left: 0; background: #f2f4ee; }
+
+@media (max-width: 900px) {
+  .bulkBar { align-items: stretch; flex-direction: column; }
+  .bulkActions { justify-content: flex-start; }
+}
