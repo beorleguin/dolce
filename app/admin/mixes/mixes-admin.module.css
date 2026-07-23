@@ -65,14 +65,14 @@
 .formGrid input, .formGrid textarea { width: 100%; border: 1px solid #ccd2c7; padding: 11px 12px; font: inherit; }
 .formGrid textarea { min-height: 82px; resize: vertical; }
 .wideField { grid-column: 1 / -1; }
-.checkField { display: flex !important; grid-auto-flow: column; justify-content: start; align-items: center; }
+.checkField { display: flex !important; grid-auto-flow: column; justify-content: flex-start; align-items: center; }
 .checkField input { width: 18px; height: 18px; }
 .mixSummary { margin: 0 18px; padding: 14px; background: #f3f6df; display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
 .mixSummary div { display: grid; gap: 4px; }
 .mixSummary span { color: #666d60; font-size: 11px; }
 .mixSummary strong { font-size: 17px; }
 .productPicker { padding: 18px; }
-.pickerHeader { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 12px; }
+.pickerHeader { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 12px; }
 .pickerHeader h3, .pickerHeader p { margin: 0; }
 .pickerHeader p { margin-top: 4px; color: #697064; font-size: 12px; }
 .searchBox { min-width: 310px; min-height: 40px; padding: 0 11px; border: 1px solid #ccd2c7; display: flex; align-items: center; gap: 8px; }

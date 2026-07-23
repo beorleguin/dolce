@@ -37,7 +37,7 @@ type Draft = {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: string;
   enabled: boolean;
   featured: boolean;
   image_url: string;
@@ -57,7 +57,7 @@ const EMPTY_DRAFT: Draft = {
   items: [],
 };
 
-function formatPrice(value: number) {
+function formatPrice(value: number | string) {
   return `$ ${Number(value || 0).toLocaleString('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
